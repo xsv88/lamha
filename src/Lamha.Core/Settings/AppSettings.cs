@@ -1,4 +1,5 @@
 using Lamha.Core.Prayer;
+using Lamha.Core.Strip;
 
 namespace Lamha.Core.Settings;
 
@@ -59,6 +60,7 @@ public sealed record AppSettings
     public ThemeMode Theme { get; init; } = ThemeMode.FollowWindows;
     public double PanelOpacity { get; init; } = 1.0;
     public LanguageMode Language { get; init; } = LanguageMode.Auto;
+    public StripSettings Strip { get; init; } = new();
 
     /// <summary>
     /// Returns a copy with every value inside its allowed range. A JSON file can hold
@@ -75,6 +77,7 @@ public sealed record AppSettings
             Location = Location ?? LocationSetting.Default,
             Hotkey = string.IsNullOrWhiteSpace(Hotkey) ? Default.Hotkey : Hotkey,
             PanelOpacity = Math.Clamp(PanelOpacity, MinOpacity, MaxOpacity),
+            Strip = (Strip ?? new StripSettings()).Normalized(),
             Prayer = prayer with
             {
                 Method = prayer.Method ?? defaults.Method,
