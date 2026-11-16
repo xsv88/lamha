@@ -5,6 +5,8 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Lamha.App</RootNamespace>
     <AssemblyName>Lamha</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>Assets\lamha.ico</ApplicationIcon>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>

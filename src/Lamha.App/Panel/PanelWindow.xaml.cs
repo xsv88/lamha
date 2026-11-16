@@ -1,0 +1,93 @@
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Interop;
+using Lamha.App.Interop;
+using Lamha.App.Tray;
+
+namespace Lamha.App.Panel;
+
+/// <summary>
+/// The panel that appears above the tray icon. Borderless, always on top,
+/// hidden from the taskbar and from Alt+Tab.
+/// </summary>
+public partial class PanelWindow : Window
+{
+    private IntPtr _hwnd;
+
+    public PanelWindow()
+    {
+        InitializeComponent();
+        SourceInitialized += (_, _) => OnHandleCreated();
+        Deactivated += (_, _) => { if (IsPinned) HidePanel(); };
+        KeyDown += (_, e) => { if (e.Key == Key.Escape) HidePanel(); };
+    }
+
+    /// <summary>True after a click or hotkey: stays open until click outside or Esc.</summary>
+    public bool IsPinned { get; private set; }
+
+    /// <summary>Raised when the panel opens or closes, so providers can start or stop sampling.</summary>
+    public event Action<bool>? OpenChanged;
+
+    /// <summary>Shows the panel next to a screen point (physical pixels) near the tray icon.</summary>
+    public void ShowNear(Native.POINT anchor, bool pinned)
+    {
+        IsPinned = pinned;
+        bool wasVisible = IsVisible;
+
+        if (!wasVisible)
+        {
+            Opacity = 0; // Avoid a flash at the old position while we measure.
+            Show();
+        }
+
+        PlaceAt(anchor);
+        Opacity = 1;
+
+        if (pinned) Activate();
+        if (!wasVisible) OpenChanged?.Invoke(true);
+    }
+
+    public void HidePanel()
+    {
+        if (!IsVisible) return;
+        IsPinned = false;
+        Hide();
+        OpenChanged?.Invoke(false);
+    }
+
+    /// <summary>True when the cursor (physical pixels) is over the panel.</summary>
+    public bool ContainsCursor(Native.POINT p) =>
+        IsVisible && Native.GetWindowRect(_hwnd, out var r)
+        && p.X >= r.Left && p.X < r.Right && p.Y >= r.Top && p.Y < r.Bottom;
+
+    private void OnHandleCreated()
+    {
+        _hwnd = new WindowInteropHelper(this).Handle;
+
+        // Tool window: no taskbar button, not in Alt+Tab.
+        var ex = (long)Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE);
+        Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex | Native.WS_EX_TOOLWINDOW));
+
+        // Rounded corners on Windows 11 (ignored on Windows 10).
+        int round = Native.DWMWCP_ROUND;
+        Native.DwmSetWindowAttribute(_hwnd, Native.DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
+    }
+
+    private void PlaceAt(Native.POINT anchor)
+    {
+        IntPtr monitor = Native.MonitorFromPoint(anchor, Native.MONITOR_DEFAULTTONEAREST);
+        var info = new Native.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Native.MONITORINFO>() };
+        Native.GetMonitorInfo(monitor, ref info);
+        double scale = Native.GetDpiForMonitor(monitor, 0, out uint dpi, out _) == 0 ? dpi / 96.0 : 1.0;
+
+        UpdateLayout();
+        var panelPx = new PxSize(ActualWidth * scale, ActualHeight * scale);
+        var work = new PxRect(info.rcWork.Left, info.rcWork.Top,
+            info.rcWork.Right - info.rcWork.Left, info.rcWork.Bottom - info.rcWork.Top);
+        var icon = new PxRect(anchor.X, anchor.Y, 1, 1);
+
+        var r = PanelPlacement.Place(icon, work, panelPx, margin: 12 * scale);
+        Native.SetWindowPos(_hwnd, IntPtr.Zero, (int)r.X, (int)r.Y, (int)r.Width, (int)r.Height,
+            Native.SWP_NOZORDER | Native.SWP_NOACTIVATE);
+    }
+}

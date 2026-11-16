@@ -15,7 +15,7 @@ public sealed class TrayIconController : IDisposable
     private readonly TaskbarIcon _icon;
     private TrayAccent _accent = TrayAccent.None;
 
-    public TrayIconController(Action onOpenPanel, Action onExit)
+    public TrayIconController(Action onHover, Action onClick, Action onExit)
     {
         var settingsItem = new MenuItem { Header = "Settings", IsEnabled = false }; // Enabled in Task 9.
         var exitItem = new MenuItem { Header = "Exit" };
@@ -27,7 +27,8 @@ public sealed class TrayIconController : IDisposable
             IconSource = LoadIcon(TrayAccent.None),
             ContextMenu = new ContextMenu { Items = { settingsItem, new Separator(), exitItem } },
         };
-        _icon.TrayLeftMouseUp += (_, _) => onOpenPanel();
+        _icon.TrayMouseMove += (_, _) => onHover();
+        _icon.TrayLeftMouseUp += (_, _) => onClick();
         _icon.ForceCreate();
     }
 

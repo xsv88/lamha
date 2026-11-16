@@ -1,4 +1,5 @@
 using System.Windows;
+using Lamha.App.Panel;
 using Lamha.App.Tray;
 
 namespace Lamha.App;
@@ -10,6 +11,8 @@ public partial class App : Application
 {
     private Mutex? _singleInstance;
     private TrayIconController? _tray;
+    private PanelWindow? _panel;
+    private HoverController? _hover;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -25,8 +28,11 @@ public partial class App : Application
 
         CrashLog.Install(this);
 
+        _panel = new PanelWindow();
+        _hover = new HoverController(_panel);
         _tray = new TrayIconController(
-            onOpenPanel: () => { /* Task 5 opens the panel here. */ },
+            onHover: _hover.OnIconHover,
+            onClick: _hover.OnIconClick,
             onExit: Shutdown);
     }
 

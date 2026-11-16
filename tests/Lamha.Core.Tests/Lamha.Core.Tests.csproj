@@ -12,6 +12,10 @@
     <ProjectReference Include="..\..\src\Lamha.Core\Lamha.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Pure placement math from the App, tested here without WPF. -->
+    <Compile Include="..\..\src\Lamha.App\Tray\PanelPlacement.cs" Link="Linked\PanelPlacement.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>
