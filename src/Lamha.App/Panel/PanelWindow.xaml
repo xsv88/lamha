@@ -17,5 +17,6 @@
         <sec:HeaderSection x:Name="Header" />
         <sec:PrayerSection x:Name="Prayer" />
         <sec:NowPlayingSection x:Name="NowPlaying" />
+        <sec:PcLoadSection x:Name="PcLoad" />
     </StackPanel>
 </Window>

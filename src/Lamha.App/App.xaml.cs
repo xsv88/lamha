@@ -17,6 +17,8 @@ public partial class App : Application
     private HoverController? _hover;
     private PrayerService? _prayer;
     private readonly Providers.MediaProvider _media = new();
+    private readonly Providers.SystemProvider _system = new();
+    private readonly System.Windows.Threading.DispatcherTimer _systemTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private SettingsStore? _store;
 
     public AppSettings Settings { get; private set; } = AppSettings.Default;
@@ -67,12 +69,21 @@ public partial class App : Application
             else _media.Stop();
         };
 
+        // PC load: sample once a second, only while the panel is open.
+        _systemTimer.Tick += (_, _) => _panel.PcLoad.Show(_system.Sample(_panel.PcLoad.WantsTopApps));
+        _panel.OpenChanged += open =>
+        {
+            if (open) { _panel.PcLoad.Show(_system.Sample(_panel.PcLoad.WantsTopApps)); _systemTimer.Start(); }
+            else _systemTimer.Stop();
+        };
+
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _prayer?.Dispose();
+        _system.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         base.OnExit(e);
