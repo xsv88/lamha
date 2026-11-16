@@ -21,6 +21,8 @@ public sealed class HoverController
     private DateTime? _hoverStarted;
     private DateTime _lastInside;
 
+    private Func<Native.POINT, bool> _isOverStrip = _ => false;
+
     public HoverController(PanelWindow panel)
     {
         _panel = panel;
@@ -45,6 +47,39 @@ public sealed class HoverController
             _hoverStarted = DateTime.UtcNow;
             _timer.Start();
         }
+    }
+
+    /// <summary>Lets the taskbar strip count as "on the icon" for opening and keeping the panel open.</summary>
+    public void AttachStrip(Func<Native.POINT, bool> isOverStrip) => _isOverStrip = isOverStrip;
+
+    /// <summary>Mouse moves over the taskbar strip. The panel opens above the strip.</summary>
+    public void OnStripHover(Native.POINT anchor)
+    {
+        if (_panel.IsVisible)
+        {
+            _lastInside = DateTime.UtcNow;
+            return;
+        }
+        if (_hoverStarted is null)
+        {
+            _anchor = anchor;
+            _hoverStarted = DateTime.UtcNow;
+            _timer.Start();
+        }
+    }
+
+    /// <summary>Click on the strip: same as clicking the icon, but the panel opens above the strip.</summary>
+    public void OnStripClick(Native.POINT anchor)
+    {
+        _hoverStarted = null;
+        if (_panel.JustClosedByOutsideClick) return;
+        if (_panel.IsVisible && _panel.IsPinned)
+        {
+            _panel.HidePanel();
+            return;
+        }
+        _anchor = anchor;
+        _panel.ShowNear(anchor, pinned: true);
     }
 
     /// <summary>Called on left click (or touch tap): toggles a pinned panel.</summary>
@@ -92,7 +127,7 @@ public sealed class HoverController
 
         if (_hoverStarted is DateTime started)
         {
-            if (!NearAnchor(cursor))
+            if (!NearAnchor(cursor) && !_isOverStrip(cursor))
             {
                 _hoverStarted = null; // Mouse passed by without stopping.
             }
@@ -106,7 +141,7 @@ public sealed class HoverController
         }
         else if (_panel.IsVisible && !_panel.IsPinned)
         {
-            if (_panel.ContainsCursor(cursor) || NearAnchor(cursor)) _lastInside = now;
+            if (_panel.ContainsCursor(cursor) || NearAnchor(cursor) || _isOverStrip(cursor)) _lastInside = now;
             else if (now - _lastInside >= CloseDelay) _panel.HidePanel();
         }
 
