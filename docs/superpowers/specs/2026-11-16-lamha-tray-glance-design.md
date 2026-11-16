@@ -49,6 +49,17 @@ transparent, always-on-top windows are still hard there.
 ### 3.2 Panel (top to bottom; each section can be turned off in Settings)
 1. **Header** — Gregorian date + Hijri date.
 2. **Prayer** — next prayer name + countdown (big), all 6 times in one row (Fajr, Shuruq, Dhuhr, Asr, Maghrib, Isha).
+   The prayer card has three color states:
+
+   | State | When | Card color | Countdown shows |
+   |---|---|---|---|
+   | Normal | Before adhan | Accent (blue) | Time to adhan |
+   | Adhan → iqama | From adhan until 1 minute before iqama | **Yellow** | Time to iqama ("الإقامة بعد 12:40") |
+   | Last minute | Final 60 seconds before iqama | **Red** | Seconds to iqama |
+
+   After iqama the card returns to Normal and counts to the next prayer.
+   The tray icon uses the same yellow / red colors in these two states.
+   Shuruq has no iqama, so it never enters the yellow / red states.
 3. **Now playing** — style 1 (approved):
    - Card background takes the dominant color of the album art (darkened so text stays readable).
    - Album art thumbnail, title, artist, source app name.
@@ -144,6 +155,8 @@ SettingsService   — JSON at %AppData%\Lamha\settings.json
 - Sections: on/off for each, drag to reorder.
 - Location: auto (Windows location) or city chosen by hand.
 - Prayer: method (default Umm al-Qura), alert minutes before, Asr calculation.
+- Prayer time adjustment: per prayer, shift the calculated time by −30 … +30 minutes (to match the local mosque).
+- Adhan → iqama gap: per prayer, in minutes. Defaults (common Saudi values, editable): Fajr 25, Dhuhr 20, Asr 20, Maghrib 10, Isha 20.
 - Shortcut key.
 - Do-not-disturb in full screen (on).
 - Startup summary (off).
@@ -164,6 +177,7 @@ SettingsService   — JSON at %AppData%\Lamha\settings.json
 ## 8. Testing
 - Unit tests (xUnit):
   - Prayer times for Dammam vs. published Umm al-Qura times (±1 min) for several dates.
+  - Per-prayer adjustment and iqama gap applied correctly; state machine Normal → Yellow → Red → Normal at the right seconds (including across midnight for Isha).
   - Album-color contrast: text/background contrast ratio ≥ 4.5.
   - Settings load/save, defaults, and broken-file recovery.
   - AlertService rules (15-min accent, do-not-disturb queue, one toast per charge cycle).
@@ -171,5 +185,6 @@ SettingsService   — JSON at %AppData%\Lamha\settings.json
 - Performance check: CPU and RAM with panel closed for 10 minutes.
 
 ## 9. Open items
-- Feature #1 (pause or lower media at adhan) was not chosen. Left out unless Khaled wants it.
 - Final app name and icon.
+
+Dropped: pausing or lowering media at adhan (Khaled chose not to include it).
