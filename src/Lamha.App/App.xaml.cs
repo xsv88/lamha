@@ -1,5 +1,7 @@
 using System.Windows;
 using Lamha.App.Panel;
+using Lamha.App.Services;
+using Lamha.Core.Settings;
 using Lamha.App.Tray;
 
 namespace Lamha.App;
@@ -13,8 +15,12 @@ public partial class App : Application
     private TrayIconController? _tray;
     private PanelWindow? _panel;
     private HoverController? _hover;
+    private PrayerService? _prayer;
+    private SettingsStore? _store;
 
-    protected override void OnStartup(StartupEventArgs e)
+    public AppSettings Settings { get; private set; } = AppSettings.Default;
+
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -34,10 +40,27 @@ public partial class App : Application
             onHover: _hover.OnIconHover,
             onClick: _hover.OnIconClick,
             onExit: Shutdown);
+
+        _store = new SettingsStore(System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lamha", "settings.json"));
+        Settings = _store.Load();
+
+        _prayer = new PrayerService(Settings.Prayer);
+        _prayer.AccentChanged += _tray.SetAccent;
+        _prayer.Updated += (state, times) =>
+        {
+            if (!_panel.IsVisible) return; // No drawing while hidden.
+            _panel.Header.Refresh();
+            _panel.Prayer.Show(state, times);
+        };
+        _panel.OpenChanged += open => _prayer.SetPanelOpen(open);
+
+        _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _prayer?.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();
         base.OnExit(e);

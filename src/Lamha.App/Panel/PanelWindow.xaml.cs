@@ -38,13 +38,13 @@ public partial class PanelWindow : Window
         {
             Opacity = 0; // Avoid a flash at the old position while we measure.
             Show();
+            OpenChanged?.Invoke(true); // Sections fill in now, so the size below is right.
         }
 
         PlaceAt(anchor);
         Opacity = 1;
 
         if (pinned) Activate();
-        if (!wasVisible) OpenChanged?.Invoke(true);
     }
 
     public void HidePanel()

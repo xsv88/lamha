@@ -1,6 +1,7 @@
 <Window x:Class="Lamha.App.Panel.PanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sec="clr-namespace:Lamha.App.Panel.Sections"
         Title="Lamha"
         Width="360"
         SizeToContent="Height"
@@ -13,6 +14,7 @@
         Foreground="#FFF3F3F3">
     <!-- Sections are added here in later tasks, in the order the user chose. -->
     <StackPanel x:Name="Sections" Margin="16">
-        <TextBlock x:Name="Placeholder" Text="Lamha" FontSize="16" />
+        <sec:HeaderSection x:Name="Header" />
+        <sec:PrayerSection x:Name="Prayer" />
     </StackPanel>
 </Window>
