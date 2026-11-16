@@ -42,7 +42,8 @@ public partial class SettingsWindow : Window
         Localize();
     }
 
-    public event Action<AppSettings>? Changed;
+    /// <summary>New settings, and whether the user pressed "Reset position" for the strip.</summary>
+    public event Action<AppSettings, bool>? Changed;
 
     /// <summary>Shown under the shortcut box when registration fails (set by the App).</summary>
     public void ShowHotkeyStatus(string message) => HotkeyStatus.Text = message;
@@ -199,11 +200,11 @@ public partial class SettingsWindow : Window
             {
                 Enabled = StripBox.IsChecked == true,
                 Items = StripBoxes.Where(b => b.SelectedIndex > 0).Select(b => (StripItem)(b.SelectedIndex - 1)).ToList(),
-                OffsetFromRightPx = _resetStrip ? null : _settings.Strip.OffsetFromRightPx,
             },
         };
+        bool reset = _resetStrip;
         _resetStrip = false;
-        Changed?.Invoke(_settings);
+        Changed?.Invoke(_settings, reset);
     }
 
     private void RefreshSectionList()

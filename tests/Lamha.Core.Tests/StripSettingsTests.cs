@@ -34,3 +34,23 @@ public class StripSettingsTests
     public void Normalize_NullStrip_Defaults() =>
         Assert.True((AppSettings.Default with { Strip = null! }).Normalized().Strip.Enabled);
 }
+
+public class StripSettingsEqualityTests
+{
+    [Fact]
+    public void SameAs_EqualContentDifferentLists_True()
+    {
+        var a = new StripSettings { Items = [StripItem.NextPrayer, StripItem.CpuRam] };
+        var b = new StripSettings { Items = new List<StripItem> { StripItem.NextPrayer, StripItem.CpuRam } };
+        Assert.True(a.SameAs(b));
+    }
+
+    [Fact]
+    public void SameAs_DifferentOrder_False() =>
+        Assert.False(new StripSettings { Items = [StripItem.NextPrayer, StripItem.CpuRam] }
+            .SameAs(new StripSettings { Items = [StripItem.CpuRam, StripItem.NextPrayer] }));
+
+    [Fact]
+    public void SameAs_DifferentOffset_False() =>
+        Assert.False(new StripSettings { OffsetFromRightPx = 10 }.SameAs(new StripSettings { OffsetFromRightPx = 20 }));
+}

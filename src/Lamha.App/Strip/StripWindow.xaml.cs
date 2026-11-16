@@ -49,6 +49,7 @@ public partial class StripWindow : Window
         Root.MouseMove += OnMouseMove;
         Root.MouseLeftButtonDown += OnMouseDown;
         Root.MouseLeftButtonUp += OnMouseUp;
+        Root.LostMouseCapture += (_, _) => EndDrag(); // UAC prompt, Alt+Tab...: never leave a drag stuck.
     }
 
     /// <summary>Mouse rests on the strip: anchor point for the panel (top-center of the strip, physical pixels).</summary>
@@ -59,6 +60,15 @@ public partial class StripWindow : Window
 
     /// <summary>User finished dragging; save this offset.</summary>
     public event Action<double>? OffsetChanged;
+
+    /// <summary>Raised when the strip starts or stops being hidden by the environment.</summary>
+    public event Action? SuppressedChanged;
+
+    /// <summary>
+    /// True while a full-screen app runs, the taskbar auto-hides or is vertical, or Explorer is restarting.
+    /// The App stops live data for the strip during this time.
+    /// </summary>
+    public bool SuppressedByEnvironment { get; private set; }
 
     /// <summary>Top-center of the strip in physical pixels: where the panel opens above.</summary>
     public Native.POINT Anchor => new() { X = (int)_lastRect.CenterX, Y = (int)_lastRect.Y + 1 };
@@ -93,7 +103,14 @@ public partial class StripWindow : Window
     private void Reposition()
     {
         _bar = TaskbarInfo.Read();
-        bool show = _enabled && _bar is { AutoHide: false } && !FullscreenDetector.IsBusy() && Blocks.Children.Count > 0;
+        bool suppressed = _bar is null || _bar.AutoHide || _bar.Bounds.Height > _bar.Bounds.Width || FullscreenDetector.IsBusy();
+        if (suppressed != SuppressedByEnvironment)
+        {
+            SuppressedByEnvironment = suppressed;
+            SuppressedChanged?.Invoke();
+        }
+
+        bool show = _enabled && !suppressed && Blocks.Children.Count > 0;
         if (!show)
         {
             if (IsVisible) Hide();
@@ -117,6 +134,7 @@ public partial class StripWindow : Window
     private void OnMouseMove(object sender, MouseEventArgs e)
     {
         var p = Native.CursorPos();
+        if (_mouseDown && e.LeftButton != MouseButtonState.Pressed) EndDrag(); // Button released outside our window.
         if (_mouseDown && _bar is not null)
         {
             if (!_dragging && Math.Abs(p.X - _dragStart.X) > DragThresholdPx) _dragging = true;
@@ -142,17 +160,20 @@ public partial class StripWindow : Window
 
     private void OnMouseUp(object sender, MouseButtonEventArgs e)
     {
-        Root.ReleaseMouseCapture();
+        bool wasDragging = _dragging;
+        EndDrag();
+        if (!wasDragging) Clicked?.Invoke(Anchor);
+    }
+
+    /// <summary>Stops any drag and saves the new place if the strip moved.</summary>
+    private void EndDrag()
+    {
+        if (!_mouseDown) return;
         _mouseDown = false;
-        if (_dragging)
-        {
-            _dragging = false;
-            if (_offsetFromRight is double o) OffsetChanged?.Invoke(o);
-        }
-        else
-        {
-            Clicked?.Invoke(Anchor);
-        }
+        bool moved = _dragging;
+        _dragging = false;
+        if (Root.IsMouseCaptured) Root.ReleaseMouseCapture();
+        if (moved && _offsetFromRight is double o) OffsetChanged?.Invoke(o);
     }
 
     private static StackPanel MakeBlock()

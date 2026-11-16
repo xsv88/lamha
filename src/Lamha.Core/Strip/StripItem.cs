@@ -19,6 +19,13 @@ public sealed record StripSettings
     /// <summary>Distance from the taskbar's right edge, in pixels, after the user drags it. Null = automatic.</summary>
     public double? OffsetFromRightPx { get; init; }
 
+    /// <summary>
+    /// Content equality. Record equality compares the Items list by reference, so two copies
+    /// with the same items would look "changed" and restart services for nothing.
+    /// </summary>
+    public bool SameAs(StripSettings other) =>
+        Enabled == other.Enabled && OffsetFromRightPx == other.OffsetFromRightPx && Items.SequenceEqual(other.Items);
+
     /// <summary>1 to 3 distinct items in the chosen order.</summary>
     public StripSettings Normalized()
     {

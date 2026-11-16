@@ -112,7 +112,8 @@ public partial class App : Application
         _hover.AttachStrip(_strip.ContainsCursor);
         _strip.Hovered += _hover.OnStripHover;
         _strip.Clicked += _hover.OnStripClick;
-        _strip.OffsetChanged += offset => ApplySettings(Settings with { Strip = Settings.Strip with { OffsetFromRightPx = offset } });
+        _strip.OffsetChanged += SaveStripOffset;
+        _strip.SuppressedChanged += UpdateActivity;
         ApplyStripSettings();
 
         _panel.Prayer.Clicked += () => OpenSettings(prayerTab: true);
@@ -148,7 +149,17 @@ public partial class App : Application
         finally { _sampling = false; }
     }
 
-    private bool StripShows(StripItem item) => Settings.Strip.Enabled && Settings.Strip.Items.Contains(item);
+    /// <summary>True when the strip is on, shows this item, and is not hidden by a game, auto-hide or a vertical taskbar.</summary>
+    private bool StripShows(StripItem item) =>
+        Settings.Strip.Enabled && Settings.Strip.Items.Contains(item) && _strip is { SuppressedByEnvironment: false };
+
+    /// <summary>Drag ended: only the offset changes, so save it without re-applying everything.</summary>
+    private void SaveStripOffset(double offset)
+    {
+        Settings = Settings with { Strip = Settings.Strip with { OffsetFromRightPx = offset } };
+        try { _store?.Save(Settings); }
+        catch (Exception ex) { CrashLog.Write(ex); }
+    }
 
     /// <summary>Starts or stops the media listener and PC sampling depending on who needs them.</summary>
     private void UpdateActivity()
@@ -211,7 +222,12 @@ public partial class App : Application
         if (_settingsWindow is null)
         {
             _settingsWindow = new Settings.SettingsWindow(Settings);
-            _settingsWindow.Changed += ApplySettings;
+            // The settings window may hold an old strip offset (the user can drag while it is open):
+            // keep the current one unless the window asked to reset it.
+            _settingsWindow.Changed += (next, resetStrip) => ApplySettings(next with
+            {
+                Strip = next.Strip with { OffsetFromRightPx = resetStrip ? null : Settings.Strip.OffsetFromRightPx },
+            });
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
         if (prayerTab) _settingsWindow.OpenPrayerTab();
@@ -240,7 +256,7 @@ public partial class App : Application
         _prayer?.SetSettings(Settings.Prayer);
         _alerts?.Update(Settings.Prayer, Settings.DoNotDisturbFullscreen);
         if (previous.StartWithWindows != Settings.StartWithWindows) StartupService.SetEnabled(Settings.StartWithWindows);
-        if (previous.Strip != Settings.Strip || previous.Language != Settings.Language) ApplyStripSettings();
+        if (!previous.Strip.SameAs(Settings.Strip) || previous.Language != Settings.Language) ApplyStripSettings();
         if (previous.Location != Settings.Location && _prayer is not null)
             _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
 
