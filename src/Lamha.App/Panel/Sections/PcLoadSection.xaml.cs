@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Lamha.App.Providers;
+using Lamha.App.Ui;
 
 namespace Lamha.App.Panel.Sections;
 
@@ -15,6 +16,7 @@ public partial class PcLoadSection : UserControl
     private static readonly Brush Critical = Frozen(0xE2, 0x4B, 0x4A);
 
     private readonly (ProgressBar Bar, TextBlock Value)[] _rows = new (ProgressBar, TextBlock)[3];
+    private readonly TextBlock[] _labels = new TextBlock[3];
 
     public PcLoadSection()
     {
@@ -22,7 +24,7 @@ public partial class PcLoadSection : UserControl
         string[] labels = ["CPU", "RAM", "GPU"];
         for (int i = 0; i < 3; i++)
         {
-            var label = new TextBlock { Text = labels[i], VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 3, 0, 3) };
+            var label = _labels[i] = new TextBlock { Text = labels[i], VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 3, 0, 3) };
             var bar = new ProgressBar { Height = 6, Minimum = 0, Maximum = 100, BorderThickness = new Thickness(0),
                 Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), VerticalAlignment = VerticalAlignment.Center };
             var value = new TextBlock { TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
@@ -33,6 +35,15 @@ public partial class PcLoadSection : UserControl
         }
         Bars.MouseLeftButtonUp += (_, _) => Clicked?.Invoke();
         Bars.Cursor = Cursors.Hand;
+    }
+
+    /// <summary>Re-applies text after a language change.</summary>
+    public void Relabel()
+    {
+        _labels[0].Text = Loc.T("CPU");
+        _labels[1].Text = Loc.T("RAM");
+        _labels[2].Text = Loc.T("GPU");
+        More.Header = Loc.T("ShowMore");
     }
 
     /// <summary>True while "Show more" is open: the provider then also reads the top apps.</summary>
@@ -66,7 +77,7 @@ public partial class PcLoadSection : UserControl
             var row = new DockPanel { Margin = new Thickness(0, 2, 0, 2) };
             var close = new Button { Content = "", FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
                 Padding = new Thickness(6, 2, 6, 2), Background = Brushes.Transparent, BorderThickness = new Thickness(0),
-                Foreground = Critical, ToolTip = $"Close {app.Name}" };
+                Foreground = Critical, ToolTip = app.Name };
             close.Click += (_, _) => CloseApp(app.Name);
             DockPanel.SetDock(close, Dock.Right);
             row.Children.Add(close);
@@ -78,7 +89,7 @@ public partial class PcLoadSection : UserControl
     /// <summary>Asks first, closes politely, and force-closes only after a second yes.</summary>
     private static async void CloseApp(string name)
     {
-        var answer = MessageBox.Show($"Close {name}? Unsaved work may be lost.", "Lamha",
+        var answer = MessageBox.Show(string.Format(Loc.T("CloseApp"), name), "Lamha",
             MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (answer != MessageBoxResult.Yes) return;
 
@@ -88,7 +99,7 @@ public partial class PcLoadSection : UserControl
         await Task.Delay(TimeSpan.FromSeconds(3));
         var left = procs.Where(p => { try { return !p.HasExited; } catch { return false; } }).ToList();
         if (left.Count > 0 &&
-            MessageBox.Show($"{name} is still running. Force close?", "Lamha",
+            MessageBox.Show(string.Format(Loc.T("ForceClose"), name), "Lamha",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
         {
             foreach (var p in left) { try { p.Kill(); } catch (Exception ex) { CrashLog.Write(ex); } }

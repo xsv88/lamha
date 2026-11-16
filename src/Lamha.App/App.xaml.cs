@@ -50,6 +50,8 @@ public partial class App : Application
         _store = new SettingsStore(System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lamha", "settings.json"));
         Settings = _store.Load();
+        Ui.Loc.Set(Settings.Language);
+        _tray.Relabel();
         _panel.ApplySettings(Settings);
         StartupService.SetEnabled(Settings.StartWithWindows);
 
@@ -60,11 +62,12 @@ public partial class App : Application
         {
             foreach (var alert in _alerts.Tick(DateTimeOffset.Now, state, Providers.FullscreenDetector.IsBusy()))
             {
+                string name = Ui.Loc.Prayer(alert.Prayer), time = alert.Due.ToString("HH:mm");
                 if (alert.Key == "missed")
-                    ToastService.Show("Prayer reminder", $"You were in full screen. {alert.Prayer} at {alert.Due:HH:mm}.");
+                    ToastService.Show(Ui.Loc.T("ToastMissedTitle"), string.Format(Ui.Loc.T("ToastMissedBody"), name, time));
                 else
-                    ToastService.Show($"{alert.Prayer} at {alert.Due:HH:mm}",
-                        $"In {Math.Max(0, (int)Math.Round((alert.Due - DateTimeOffset.Now).TotalMinutes))} minutes.");
+                    ToastService.Show(string.Format(Ui.Loc.T("ToastSoonTitle"), name, time),
+                        string.Format(Ui.Loc.T("ToastSoonBody"), Math.Max(0, (int)Math.Round((alert.Due - DateTimeOffset.Now).TotalMinutes))));
             }
 
             if (!_panel.IsVisible) return; // No drawing while hidden.
@@ -136,10 +139,12 @@ public partial class App : Application
             // Keep the old shortcut and tell the user.
             Settings = Settings with { Hotkey = previous.Hotkey };
             _hotkey.Register(previous.Hotkey, _hover.TogglePinned);
-            _settingsWindow?.ShowHotkeyStatus("This shortcut is in use. Kept " + previous.Hotkey + ".");
+            _settingsWindow?.ShowHotkeyStatus(string.Format(Ui.Loc.T("HotkeyInUse"), previous.Hotkey));
         }
         _store?.Save(Settings);
 
+        Ui.Loc.Set(Settings.Language);
+        _tray?.Relabel();
         _panel?.ApplySettings(Settings);
         _prayer?.SetSettings(Settings.Prayer);
         _alerts?.Update(Settings.Prayer, Settings.DoNotDisturbFullscreen);

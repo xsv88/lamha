@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Lamha.App.Interop;
 using Lamha.App.Tray;
+using Lamha.App.Ui;
 using Lamha.Core.Settings;
 using System.Windows.Controls;
 
@@ -17,6 +18,7 @@ public partial class PanelWindow : Window
     private IntPtr _hwnd;
     private Native.POINT _anchor;
     private double _opacity = 1.0;
+    private Lamha.Core.Settings.ThemeMode _theme;
 
     public PanelWindow()
     {
@@ -43,13 +45,12 @@ public partial class PanelWindow : Window
 
         if (!wasVisible)
         {
-            Opacity = 0; // Avoid a flash at the old position while we measure.
             Show();
             OpenChanged?.Invoke(true); // Sections fill in now, so the size below is right.
         }
 
         PlaceAt(anchor);
-        Opacity = _opacity;
+        SetAlpha(_opacity);
 
         if (pinned) Activate();
     }
@@ -58,7 +59,12 @@ public partial class PanelWindow : Window
     public void ApplySettings(AppSettings s)
     {
         _opacity = s.PanelOpacity;
-        if (IsVisible) Opacity = _opacity;
+        if (IsVisible) SetAlpha(_opacity);
+        _theme = s.Theme;
+        Theme.Apply(this, Theme.IsDark(s.Theme));
+        FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        Header.Invalidate();
+        PcLoad.Relabel();
 
         var hosts = new Dictionary<SectionId, FrameworkElement>
         {
@@ -97,9 +103,36 @@ public partial class PanelWindow : Window
         var ex = (long)Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE);
         Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex | Native.WS_EX_TOOLWINDOW));
 
+        SetAlpha(_opacity);
+
+        Theme.Apply(this, Theme.IsDark(_theme));
+        // Follow Windows when the user switches light/dark.
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, e) =>
+        {
+            if (e.Category == Microsoft.Win32.UserPreferenceCategory.General)
+                Dispatcher.BeginInvoke(() => Theme.Apply(this, Theme.IsDark(_theme)));
+        };
+
         // Rounded corners on Windows 11 (ignored on Windows 10).
         int round = Native.DWMWCP_ROUND;
         Native.DwmSetWindowAttribute(_hwnd, Native.DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
+    }
+
+    /// <summary>
+    /// Below 100%: a layered window with alpha (no WPF AllowsTransparency, which is slow).
+    /// At 100%: a normal window, so Windows 11 can draw the blurred backdrop (it does not work on layered windows).
+    /// </summary>
+    private void SetAlpha(double opacity)
+    {
+        if (_hwnd == IntPtr.Zero) return;
+        var ex = (long)Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE);
+        if (opacity >= 0.999)
+        {
+            Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex & ~Native.WS_EX_LAYERED));
+            return;
+        }
+        Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex | Native.WS_EX_LAYERED));
+        Native.SetLayeredWindowAttributes(_hwnd, 0, (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255), Native.LWA_ALPHA);
     }
 
     private void PlaceAt(Native.POINT anchor)

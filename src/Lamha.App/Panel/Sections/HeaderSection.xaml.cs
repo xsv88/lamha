@@ -1,20 +1,18 @@
 using System.Globalization;
 using System.Windows.Controls;
+using Lamha.App.Ui;
 
 namespace Lamha.App.Panel.Sections;
 
 /// <summary>Top line: today's Gregorian and Hijri (Umm al-Qura) dates.</summary>
 public partial class HeaderSection : UserControl
 {
-    private static readonly string[] HijriMonthsEn =
-    [
-        "Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Ula", "Jumada al-Akhirah",
-        "Rajab", "Shaban", "Ramadan", "Shawwal", "Dhu al-Qadah", "Dhu al-Hijjah",
-    ];
-
     private DateOnly _shown;
 
     public HeaderSection() => InitializeComponent();
+
+    /// <summary>Forces a redraw (language changed).</summary>
+    public void Invalidate() => _shown = default;
 
     public void Refresh()
     {
@@ -23,9 +21,9 @@ public partial class HeaderSection : UserControl
         _shown = today;
 
         var dt = today.ToDateTime(TimeOnly.MinValue);
-        GregorianText.Text = dt.ToString("dddd d MMMM", CultureInfo.CurrentUICulture);
+        GregorianText.Text = dt.ToString("dddd d MMMM", Loc.DateCulture);
 
         var hijri = new UmAlQuraCalendar();
-        HijriText.Text = $"{hijri.GetDayOfMonth(dt)} {HijriMonthsEn[hijri.GetMonth(dt) - 1]} {hijri.GetYear(dt)}";
+        HijriText.Text = $"{hijri.GetDayOfMonth(dt)} {Loc.HijriMonth(hijri.GetMonth(dt))} {hijri.GetYear(dt)}";
     }
 }

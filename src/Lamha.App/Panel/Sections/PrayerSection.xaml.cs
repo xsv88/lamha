@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using Lamha.App.Ui;
 using Lamha.Core.Prayer;
 
 namespace Lamha.App.Panel.Sections;
@@ -53,8 +54,8 @@ public partial class PrayerSection : UserControl
         (TitleText.Text, CountdownText.Text) = state.Phase switch
         {
             PrayerPhase.Normal => (name, Format(state.Remaining)),
-            PrayerPhase.IqamaWait => ($"{name} · Iqama in", Format(state.Remaining)),
-            _ => ($"{name} · Iqama in", $"{Math.Ceiling(state.Remaining.TotalSeconds):0}s"),
+            PrayerPhase.IqamaWait => (name + " · " + Loc.T("IqamaIn"), Format(state.Remaining)),
+            _ => (name + " · " + Loc.T("IqamaIn"), $"{Math.Ceiling(state.Remaining.TotalSeconds):0}s"),
         };
 
         foreach (var p in Enum.GetValues<PrayerName>())
@@ -72,8 +73,7 @@ public partial class PrayerSection : UserControl
         Clicked?.Invoke();
     }
 
-    /// <summary>Display name. Arabic names come in Task 11.</summary>
-    private static string DisplayName(PrayerName p) => p.ToString();
+    private static string DisplayName(PrayerName p) => Loc.Prayer(p);
 
     private static string Format(TimeSpan t) =>
         t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{t.Minutes:00}:{t.Seconds:00}";

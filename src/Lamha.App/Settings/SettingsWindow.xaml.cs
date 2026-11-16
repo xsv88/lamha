@@ -35,6 +35,7 @@ public partial class SettingsWindow : Window
         _order = settings.SectionOrder.ToList();
         Build();
         Load();
+        Localize();
     }
 
     public event Action<AppSettings>? Changed;
@@ -43,6 +44,20 @@ public partial class SettingsWindow : Window
     public void ShowHotkeyStatus(string message) => HotkeyStatus.Text = message;
 
     public void OpenPrayerTab() => Tabs.SelectedItem = PrayerTab;
+
+    private void Localize()
+    {
+        if (!Ui.Loc.IsArabic) return;
+        FlowDirection = FlowDirection.RightToLeft;
+        Title = "إعدادات لمحة";
+        string[] tabs = ["الأقسام", "الموقع", "الصلاة", "الاختصار", "الشكل", "عام"];
+        for (int i = 0; i < Tabs.Items.Count && i < tabs.Length; i++) ((TabItem)Tabs.Items[i]).Header = tabs[i];
+        UpButton.Content = "أعلى"; DownButton.Content = "أسفل";
+        LocAuto.Content = "استخدم موقع ويندوز"; LocCity.Content = "اختر مدينة"; LocManual.Content = "أدخل الإحداثيات";
+        AlertsBox.Content = "ذكّرني قبل كل صلاة";
+        StartupBox.Content = "تشغيل لمحة مع ويندوز";
+        DndBox.Content = "عدم الإزعاج أثناء الألعاب والفيديو والعروض بملء الشاشة";
+    }
 
     private void Build()
     {

@@ -70,5 +70,18 @@ public static partial class Native
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MARGINS { public int Left, Right, Top, Bottom; }
+
+    [LibraryImport("dwmapi.dll")]
+    public static partial int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS margins);
+
+    public const int WS_EX_LAYERED = 0x00080000;
+    public const uint LWA_ALPHA = 0x2;
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool SetLayeredWindowAttributes(IntPtr hWnd, uint key, byte alpha, uint flags);
+
     public static POINT CursorPos() => GetCursorPos(out var p) ? p : default;
 }

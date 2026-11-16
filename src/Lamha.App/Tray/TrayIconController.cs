@@ -14,12 +14,14 @@ public sealed class TrayIconController : IDisposable
 {
     private readonly TaskbarIcon _icon;
     private TrayAccent _accent = TrayAccent.None;
+    private readonly MenuItem _settingsItem;
+    private readonly MenuItem _exitItem;
 
     public TrayIconController(Action onHover, Action onClick, Action onSettings, Action onExit)
     {
-        var settingsItem = new MenuItem { Header = "Settings" };
+        var settingsItem = _settingsItem = new MenuItem { Header = "Settings" };
         settingsItem.Click += (_, _) => onSettings();
-        var exitItem = new MenuItem { Header = "Exit" };
+        var exitItem = _exitItem = new MenuItem { Header = "Exit" };
         exitItem.Click += (_, _) => onExit();
 
         _icon = new TaskbarIcon
@@ -31,6 +33,12 @@ public sealed class TrayIconController : IDisposable
         _icon.TrayMouseMove += (_, _) => onHover();
         _icon.TrayLeftMouseUp += (_, _) => onClick();
         _icon.ForceCreate();
+    }
+
+    public void Relabel()
+    {
+        _settingsItem.Header = Lamha.App.Ui.Loc.T("Settings");
+        _exitItem.Header = Lamha.App.Ui.Loc.T("Exit");
     }
 
     public void SetAccent(TrayAccent accent)
