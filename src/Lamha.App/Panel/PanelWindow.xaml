@@ -16,5 +16,6 @@
     <StackPanel x:Name="Sections" Margin="16">
         <sec:HeaderSection x:Name="Header" />
         <sec:PrayerSection x:Name="Prayer" />
+        <sec:NowPlayingSection x:Name="NowPlaying" />
     </StackPanel>
 </Window>

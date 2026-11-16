@@ -13,6 +13,7 @@ namespace Lamha.App.Panel;
 public partial class PanelWindow : Window
 {
     private IntPtr _hwnd;
+    private Native.POINT _anchor;
 
     public PanelWindow()
     {
@@ -20,6 +21,8 @@ public partial class PanelWindow : Window
         SourceInitialized += (_, _) => OnHandleCreated();
         Deactivated += (_, _) => { if (IsPinned) HidePanel(); };
         KeyDown += (_, e) => { if (e.Key == Key.Escape) HidePanel(); };
+        // A section can appear later (e.g. music starts): keep the panel anchored to the icon.
+        SizeChanged += (_, _) => { if (IsVisible) PlaceAt(_anchor); };
     }
 
     /// <summary>True after a click or hotkey: stays open until click outside or Esc.</summary>
@@ -32,6 +35,7 @@ public partial class PanelWindow : Window
     public void ShowNear(Native.POINT anchor, bool pinned)
     {
         IsPinned = pinned;
+        _anchor = anchor;
         bool wasVisible = IsVisible;
 
         if (!wasVisible)

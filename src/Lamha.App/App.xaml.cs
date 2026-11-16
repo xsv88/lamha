@@ -16,6 +16,7 @@ public partial class App : Application
     private PanelWindow? _panel;
     private HoverController? _hover;
     private PrayerService? _prayer;
+    private readonly Providers.MediaProvider _media = new();
     private SettingsStore? _store;
 
     public AppSettings Settings { get; private set; } = AppSettings.Default;
@@ -54,6 +55,17 @@ public partial class App : Application
             _panel.Prayer.Show(state, times);
         };
         _panel.OpenChanged += open => _prayer.SetPanelOpen(open);
+
+        // Now playing: listen only while the panel is open.
+        _media.Changed += np => Dispatcher.BeginInvoke(() => _panel.NowPlaying.Show(np));
+        _panel.NowPlaying.PlayPause += () => _ = _media.PlayPauseAsync();
+        _panel.NowPlaying.Next += () => _ = _media.NextAsync();
+        _panel.NowPlaying.Previous += () => _ = _media.PreviousAsync();
+        _panel.OpenChanged += open =>
+        {
+            if (open) _ = _media.StartAsync();
+            else _media.Stop();
+        };
 
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
     }
