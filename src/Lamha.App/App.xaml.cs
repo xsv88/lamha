@@ -17,6 +17,8 @@ public partial class App : Application
     private HoverController? _hover;
     private PrayerService? _prayer;
     private readonly Providers.MediaProvider _media = new();
+    private HotkeyService? _hotkey;
+    private Lamha.Core.Alerts.AlertRules? _alerts;
     private readonly Providers.SystemProvider _system = new();
     private readonly System.Windows.Threading.DispatcherTimer _systemTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private SettingsStore? _store;
@@ -53,8 +55,18 @@ public partial class App : Application
 
         _prayer = new PrayerService(Settings.Prayer);
         _prayer.AccentChanged += _tray.SetAccent;
+        _alerts = new Lamha.Core.Alerts.AlertRules(Settings.Prayer, Settings.DoNotDisturbFullscreen);
         _prayer.Updated += (state, times) =>
         {
+            foreach (var alert in _alerts.Tick(DateTimeOffset.Now, state, Providers.FullscreenDetector.IsBusy()))
+            {
+                if (alert.Key == "missed")
+                    ToastService.Show("Prayer reminder", $"You were in full screen. {alert.Prayer} at {alert.Due:HH:mm}.");
+                else
+                    ToastService.Show($"{alert.Prayer} at {alert.Due:HH:mm}",
+                        $"In {Math.Max(0, (int)Math.Round((alert.Due - DateTimeOffset.Now).TotalMinutes))} minutes.");
+            }
+
             if (!_panel.IsVisible) return; // No drawing while hidden.
             _panel.Header.Refresh();
             _panel.Prayer.Show(state, times);
@@ -81,6 +93,15 @@ public partial class App : Application
         };
 
         _panel.Prayer.Clicked += () => OpenSettings(prayerTab: true);
+        _panel.PcLoad.Clicked += () =>
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("taskmgr.exe") { UseShellExecute = true }); }
+            catch (Exception ex) { CrashLog.Write(ex); }
+        };
+
+        _hotkey = new HotkeyService();
+        if (!_hotkey.Register(Settings.Hotkey, _hover.TogglePinned))
+            CrashLog.Write(new InvalidOperationException($"Hotkey {Settings.Hotkey} is in use by another app."));
 
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
     }
@@ -108,10 +129,20 @@ public partial class App : Application
     {
         var previous = Settings;
         Settings = next.Normalized();
+
+        if (previous.Hotkey != Settings.Hotkey && _hotkey is not null && _hover is not null
+            && !_hotkey.Register(Settings.Hotkey, _hover.TogglePinned))
+        {
+            // Keep the old shortcut and tell the user.
+            Settings = Settings with { Hotkey = previous.Hotkey };
+            _hotkey.Register(previous.Hotkey, _hover.TogglePinned);
+            _settingsWindow?.ShowHotkeyStatus("This shortcut is in use. Kept " + previous.Hotkey + ".");
+        }
         _store?.Save(Settings);
 
         _panel?.ApplySettings(Settings);
         _prayer?.SetSettings(Settings.Prayer);
+        _alerts?.Update(Settings.Prayer, Settings.DoNotDisturbFullscreen);
         if (previous.StartWithWindows != Settings.StartWithWindows) StartupService.SetEnabled(Settings.StartWithWindows);
         if (previous.Location != Settings.Location && _prayer is not null)
             _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
@@ -122,6 +153,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _prayer?.Dispose();
+        _hotkey?.Dispose();
         _system.Dispose();
         _tray?.Dispose();
         _singleInstance?.Dispose();

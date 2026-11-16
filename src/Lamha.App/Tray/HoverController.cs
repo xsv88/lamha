@@ -61,6 +61,29 @@ public sealed class HoverController
         _panel.ShowNear(_anchor, pinned: true);
     }
 
+    /// <summary>Hotkey: toggles a pinned panel at the icon's last known place (or bottom-right of the main screen).</summary>
+    public void TogglePinned()
+    {
+        _hoverStarted = null;
+        if (_panel.IsVisible)
+        {
+            _panel.HidePanel();
+            return;
+        }
+        var anchor = LastAnchor ?? DefaultAnchor();
+        _anchor = anchor;
+        _panel.ShowNear(anchor, pinned: true);
+    }
+
+    private static Native.POINT DefaultAnchor()
+    {
+        // Just below the bottom-right corner of the main screen's work area = where the tray usually is.
+        var primary = Native.MonitorFromPoint(new Native.POINT { X = 0, Y = 0 }, Native.MONITOR_DEFAULTTONEAREST);
+        var info = new Native.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Native.MONITORINFO>() };
+        if (!Native.GetMonitorInfo(primary, ref info)) return new Native.POINT { X = 1880, Y = 1050 };
+        return new Native.POINT { X = info.rcWork.Right - 40, Y = info.rcWork.Bottom + 10 };
+    }
+
     private void Tick()
     {
         var cursor = Native.CursorPos();
