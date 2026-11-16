@@ -27,7 +27,9 @@ public partial class PcLoadSection : UserControl
             var label = _labels[i] = new TextBlock { Text = labels[i], VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 3, 0, 3) };
             var bar = new ProgressBar { Height = 6, Minimum = 0, Maximum = 100, BorderThickness = new Thickness(0),
                 Background = new SolidColorBrush(Color.FromArgb(0x30, 0xFF, 0xFF, 0xFF)), VerticalAlignment = VerticalAlignment.Center };
-            var value = new TextBlock { TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            // Numbers with units ("26.1 GB", "30%") always read left-to-right, even in the Arabic layout.
+            var value = new TextBlock { TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
+                FlowDirection = FlowDirection.LeftToRight };
             Grid.SetRow(label, i); Grid.SetRow(bar, i); Grid.SetRow(value, i);
             Grid.SetColumn(bar, 1); Grid.SetColumn(value, 2);
             Bars.Children.Add(label); Bars.Children.Add(bar); Bars.Children.Add(value);
@@ -81,7 +83,8 @@ public partial class PcLoadSection : UserControl
             close.Click += (_, _) => CloseApp(app.Name);
             DockPanel.SetDock(close, Dock.Right);
             row.Children.Add(close);
-            row.Children.Add(new TextBlock { Text = $"{app.Name}   {app.PrivateGb:0.0} GB", VerticalAlignment = VerticalAlignment.Center });
+            row.Children.Add(new TextBlock { Text = $"{app.Name}   {app.PrivateGb:0.0} GB", VerticalAlignment = VerticalAlignment.Center,
+                FlowDirection = FlowDirection.LeftToRight, HorizontalAlignment = HorizontalAlignment.Left });
             TopList.Children.Add(row);
         }
     }
