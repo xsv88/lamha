@@ -75,6 +75,17 @@
                 <ComboBox x:Name="LanguageBox" Width="220" HorizontalAlignment="Left" />
             </StackPanel>
         </TabItem>
+        <TabItem Header="Taskbar" x:Name="TaskbarTab">
+            <StackPanel Margin="12">
+                <CheckBox x:Name="StripBox" />
+                <TextBlock x:Name="StripItemsLabel" Style="{StaticResource Label}" />
+                <ComboBox x:Name="StripItem1" Width="220" HorizontalAlignment="Left" Margin="0,0,0,6" />
+                <ComboBox x:Name="StripItem2" Width="220" HorizontalAlignment="Left" Margin="0,0,0,6" />
+                <ComboBox x:Name="StripItem3" Width="220" HorizontalAlignment="Left" />
+                <Button x:Name="ResetStripButton" HorizontalAlignment="Left" Padding="10,4" Margin="0,12,0,0" />
+                <TextBlock x:Name="StripHint" Opacity="0.7" Margin="0,8,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </TabItem>
         <TabItem Header="General">
             <StackPanel Margin="12">
                 <CheckBox x:Name="StartupBox" Content="Start Lamha with Windows" Margin="0,0,0,8" />

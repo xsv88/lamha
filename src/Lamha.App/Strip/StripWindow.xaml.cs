@@ -39,7 +39,8 @@ public partial class StripWindow : Window
         {
             _hwnd = new WindowInteropHelper(this).Handle;
             var ex = (long)Native.GetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE);
-            Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex | Native.WS_EX_TOOLWINDOW));
+            // Tool window (not in Alt+Tab) that never takes keyboard focus from the app you are using.
+            Native.SetWindowLongPtr(_hwnd, Native.GWL_EXSTYLE, (IntPtr)(ex | Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE));
         };
         _placeTimer.Tick += (_, _) => Reposition();
         SizeChanged += (_, _) => Reposition();

@@ -41,6 +41,11 @@ public static class Loc
         ["ToastSoonTitle"] = "{0} at {1}", ["ToastSoonBody"] = "In {0} minutes.",
         ["ToastMissedTitle"] = "Prayer reminder", ["ToastMissedBody"] = "You were in full screen. {0} at {1}.",
         ["HotkeyInUse"] = "This shortcut is in use. Kept {0}.",
+        ["In"] = "in", ["Iqama"] = "Iqama",
+        ["StripNextPrayer"] = "Next prayer", ["StripNowPlaying"] = "Now playing", ["StripCpuRam"] = "CPU and RAM",
+        ["StripHijriDate"] = "Hijri date", ["StripNone"] = "None", ["Taskbar"] = "Taskbar",
+        ["ShowStrip"] = "Show text on the taskbar", ["ResetPosition"] = "Reset position",
+        ["StripItems"] = "Items (up to 3, left to right)", ["StripHint"] = "Tip: drag the text on the taskbar to move it.",
     };
 
     private static readonly Dictionary<string, string> Ar = new()
@@ -56,5 +61,10 @@ public static class Loc
         ["ToastSoonTitle"] = "{0} الساعة {1}", ["ToastSoonBody"] = "بعد {0} دقيقة.",
         ["ToastMissedTitle"] = "تذكير بالصلاة", ["ToastMissedBody"] = "كنت في وضع ملء الشاشة. {0} الساعة {1}.",
         ["HotkeyInUse"] = "هذا الاختصار مستخدم. أبقينا {0}.",
+        ["In"] = "بعد", ["Iqama"] = "الإقامة",
+        ["StripNextPrayer"] = "الصلاة الجاية", ["StripNowPlaying"] = "المقطع الشغال", ["StripCpuRam"] = "المعالج والرام",
+        ["StripHijriDate"] = "التاريخ الهجري", ["StripNone"] = "لا شيء", ["Taskbar"] = "شريط المهام",
+        ["ShowStrip"] = "إظهار النص على شريط المهام", ["ResetPosition"] = "إرجاع المكان الافتراضي",
+        ["StripItems"] = "العناصر (حتى ٣، بالترتيب)", ["StripHint"] = "تلميح: اسحب النص على الشريط لتحريكه.",
     };
 }

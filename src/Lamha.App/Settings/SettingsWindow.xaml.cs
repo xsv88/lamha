@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Lamha.Core.Prayer;
 using Lamha.Core.Settings;
+using Lamha.Core.Strip;
 using ThemeMode = Lamha.Core.Settings.ThemeMode;
 
 namespace Lamha.App.Settings;
@@ -27,6 +28,9 @@ public partial class SettingsWindow : Window
     private bool _loading;
     private readonly Dictionary<PrayerName, (Slider Offset, Slider Iqama)> _prayerRows = new();
     private List<SectionId> _order;
+    private bool _resetStrip;
+
+    private ComboBox[] StripBoxes => [StripItem1, StripItem2, StripItem3];
 
     public SettingsWindow(AppSettings settings)
     {
@@ -50,7 +54,7 @@ public partial class SettingsWindow : Window
         if (!Ui.Loc.IsArabic) return;
         FlowDirection = FlowDirection.RightToLeft;
         Title = "إعدادات لمحة";
-        string[] tabs = ["الأقسام", "الموقع", "الصلاة", "الاختصار", "الشكل", "عام"];
+        string[] tabs = ["الأقسام", "الموقع", "الصلاة", "الاختصار", "الشكل", "شريط المهام", "عام"];
         for (int i = 0; i < Tabs.Items.Count && i < tabs.Length; i++) ((TabItem)Tabs.Items[i]).Header = tabs[i];
         UpButton.Content = "أعلى"; DownButton.Content = "أسفل";
         LocAuto.Content = "استخدم موقع ويندوز"; LocCity.Content = "اختر مدينة"; LocManual.Content = "أدخل الإحداثيات";
@@ -65,6 +69,19 @@ public partial class SettingsWindow : Window
         AsrBox.Items.Add("Standard (Shafi, Maliki, Hanbali)");
         AsrBox.Items.Add("Hanafi");
         foreach (var t in Enum.GetNames<ThemeMode>()) ThemeBox.Items.Add(t);
+        foreach (var box in StripBoxes)
+        {
+            box.Items.Add(Ui.Loc.T("StripNone"));
+            foreach (var item in Enum.GetValues<StripItem>()) box.Items.Add(Ui.Loc.T("Strip" + item));
+            box.SelectionChanged += (_, _) => Commit();
+        }
+        StripBox.Content = Ui.Loc.T("ShowStrip");
+        StripBox.Click += (_, _) => Commit();
+        StripItemsLabel.Text = Ui.Loc.T("StripItems");
+        ResetStripButton.Content = Ui.Loc.T("ResetPosition");
+        ResetStripButton.Click += (_, _) => { _resetStrip = true; Commit(); };
+        StripHint.Text = Ui.Loc.T("StripHint");
+        TaskbarTab.Header = Ui.Loc.T("Taskbar");
         foreach (var l in Enum.GetNames<LanguageMode>()) LanguageBox.Items.Add(l);
 
         // One row per prayer: name, offset slider + value, iqama slider + value.
@@ -131,6 +148,9 @@ public partial class SettingsWindow : Window
         OpacitySlider.Value = Math.Round(s.PanelOpacity * 100);
         LanguageBox.SelectedIndex = (int)s.Language;
         StartupBox.IsChecked = s.StartWithWindows;
+        StripBox.IsChecked = s.Strip.Enabled;
+        for (int i = 0; i < 3; i++)
+            StripBoxes[i].SelectedIndex = i < s.Strip.Items.Count ? (int)s.Strip.Items[i] + 1 : 0; // 0 = None.
         DndBox.IsChecked = s.DoNotDisturbFullscreen;
 
         _loading = false;
@@ -175,7 +195,14 @@ public partial class SettingsWindow : Window
             Language = (LanguageMode)Math.Max(0, LanguageBox.SelectedIndex),
             StartWithWindows = StartupBox.IsChecked == true,
             DoNotDisturbFullscreen = DndBox.IsChecked == true,
+            Strip = _settings.Strip with
+            {
+                Enabled = StripBox.IsChecked == true,
+                Items = StripBoxes.Where(b => b.SelectedIndex > 0).Select(b => (StripItem)(b.SelectedIndex - 1)).ToList(),
+                OffsetFromRightPx = _resetStrip ? null : _settings.Strip.OffsetFromRightPx,
+            },
         };
+        _resetStrip = false;
         Changed?.Invoke(_settings);
     }
 
