@@ -45,6 +45,7 @@ transparent, always-on-top windows are still hard there.
 - Accent state (color change) when:
   - next prayer is less than 15 minutes away, or
   - a tracked device battery is under 20%.
+- Yellow between adhan and iqama; red in the last minute before iqama (see 3.2).
 
 ### 3.2 Panel (top to bottom; each section can be turned off in Settings)
 1. **Header** — Gregorian date + Hijri date.
