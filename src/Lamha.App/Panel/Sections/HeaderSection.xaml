@@ -1,0 +1,9 @@
+<UserControl x:Class="Lamha.App.Panel.Sections.HeaderSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Two lines so long dates (e.g. "Wednesday 16 November" + a long Hijri month) never clip. -->
+    <StackPanel Margin="0,0,0,10">
+        <TextBlock x:Name="GregorianText" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+        <TextBlock x:Name="HijriText" FontSize="12" Opacity="0.7" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+</UserControl>

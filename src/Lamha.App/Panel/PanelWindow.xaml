@@ -1,0 +1,23 @@
+<Window x:Class="Lamha.App.Panel.PanelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sec="clr-namespace:Lamha.App.Panel.Sections"
+        Title="Lamha"
+        Width="360"
+        SizeToContent="Height"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        ShowActivated="False"
+        Background="#FF202020"
+        Foreground="#FFF3F3F3">
+    <!-- Sections are added here in later tasks, in the order the user chose. -->
+    <StackPanel x:Name="Sections" Margin="16">
+        <!-- Each host is shown or hidden by settings; the section inside may also hide itself. -->
+        <Border x:Name="HeaderHost"><sec:HeaderSection x:Name="Header" /></Border>
+        <Border x:Name="PrayerHost"><sec:PrayerSection x:Name="Prayer" /></Border>
+        <Border x:Name="NowPlayingHost"><sec:NowPlayingSection x:Name="NowPlaying" /></Border>
+        <Border x:Name="PcLoadHost"><sec:PcLoadSection x:Name="PcLoad" /></Border>
+    </StackPanel>
+</Window>

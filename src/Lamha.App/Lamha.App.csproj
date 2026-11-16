@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Lamha.App</RootNamespace>
+    <AssemblyName>Lamha</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Assets\lamha.ico</ApplicationIcon>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.*" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lamha.Core\Lamha.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\*.ico" />
+  </ItemGroup>
+</Project>

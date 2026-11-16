@@ -1,0 +1,64 @@
+using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+using H.NotifyIcon;
+
+namespace Lamha.App.Tray;
+
+/// <summary>Color of the tray icon. Blue = prayer soon, Yellow = waiting for iqama, Red = last minute.</summary>
+public enum TrayAccent { None, Blue, Yellow, Red }
+
+/// <summary>
+/// Owns the icon next to the clock and its right-click menu.
+/// </summary>
+public sealed class TrayIconController : IDisposable
+{
+    private readonly TaskbarIcon _icon;
+    private TrayAccent _accent = TrayAccent.None;
+    private readonly MenuItem _settingsItem;
+    private readonly MenuItem _exitItem;
+
+    public TrayIconController(Action onHover, Action onClick, Action onSettings, Action onExit)
+    {
+        var settingsItem = _settingsItem = new MenuItem { Header = "Settings" };
+        settingsItem.Click += (_, _) => onSettings();
+        var exitItem = _exitItem = new MenuItem { Header = "Exit" };
+        exitItem.Click += (_, _) => onExit();
+
+        _icon = new TaskbarIcon
+        {
+            ToolTipText = "Lamha",
+            IconSource = LoadIcon(TrayAccent.None),
+            ContextMenu = new ContextMenu { Items = { settingsItem, new Separator(), exitItem } },
+        };
+        _icon.TrayMouseMove += (_, _) => onHover();
+        _icon.TrayLeftMouseUp += (_, _) => onClick();
+        _icon.ForceCreate();
+    }
+
+    public void Relabel()
+    {
+        _settingsItem.Header = Lamha.App.Ui.Loc.T("Settings");
+        _exitItem.Header = Lamha.App.Ui.Loc.T("Exit");
+    }
+
+    public void SetAccent(TrayAccent accent)
+    {
+        if (accent == _accent) return;
+        _accent = accent;
+        _icon.IconSource = LoadIcon(accent);
+    }
+
+    public void Dispose() => _icon.Dispose();
+
+    private static BitmapImage LoadIcon(TrayAccent accent)
+    {
+        string name = accent switch
+        {
+            TrayAccent.Blue => "lamha-blue",
+            TrayAccent.Yellow => "lamha-yellow",
+            TrayAccent.Red => "lamha-red",
+            _ => "lamha",
+        };
+        return new BitmapImage(new Uri($"pack://application:,,,/Assets/{name}.ico"));
+    }
+}
