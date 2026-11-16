@@ -33,8 +33,12 @@ public sealed class SettingsStore(string filePath)
         }
         catch (JsonException)
         {
-            MoveAside();
+            MoveAside(); // Broken content: keep it for inspection, start fresh.
             return AppSettings.Default;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return AppSettings.Default; // Locked (OneDrive, antivirus): the file itself may be fine, leave it.
         }
     }
 

@@ -77,21 +77,28 @@ public partial class App : Application
         _panel.OpenChanged += open => _prayer.SetPanelOpen(open);
 
         // Now playing: listen only while the panel is open.
-        _media.Changed += np => Dispatcher.BeginInvoke(() => _panel.NowPlaying.Show(np));
+        _media.Changed += np => Dispatcher.BeginInvoke(() =>
+        {
+            if (_panel.IsVisible) _panel.NowPlaying.Show(np); // Late events after closing are ignored.
+        });
         _panel.NowPlaying.PlayPause += () => _ = _media.PlayPauseAsync();
         _panel.NowPlaying.Next += () => _ = _media.NextAsync();
         _panel.NowPlaying.Previous += () => _ = _media.PreviousAsync();
         _panel.OpenChanged += open =>
         {
             if (open) _ = _media.StartAsync();
-            else _media.Stop();
+            else
+            {
+                _media.Stop();
+                _panel.NowPlaying.Show(null); // Stops the progress timer and the bar animations.
+            }
         };
 
         // PC load: sample once a second, only while the panel is open.
-        _systemTimer.Tick += (_, _) => _panel.PcLoad.Show(_system.Sample(_panel.PcLoad.WantsTopApps));
+        _systemTimer.Tick += (_, _) => SampleSystem();
         _panel.OpenChanged += open =>
         {
-            if (open) { _panel.PcLoad.Show(_system.Sample(_panel.PcLoad.WantsTopApps)); _systemTimer.Start(); }
+            if (open) { SampleSystem(); _systemTimer.Start(); }
             else _systemTimer.Stop();
         };
 
@@ -107,6 +114,23 @@ public partial class App : Application
             CrashLog.Write(new InvalidOperationException($"Hotkey {Settings.Hotkey} is in use by another app."));
 
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
+    }
+
+    private bool _sampling;
+
+    /// <summary>Reads counters on a background thread so the panel never stutters.</summary>
+    private async void SampleSystem()
+    {
+        if (_sampling || _panel is null) return;
+        _sampling = true;
+        try
+        {
+            bool top = _panel.PcLoad.WantsTopApps;
+            var snapshot = await Task.Run(() => _system.Sample(top));
+            if (_panel.IsVisible) _panel.PcLoad.Show(snapshot);
+        }
+        catch (Exception ex) { CrashLog.Write(ex); }
+        finally { _sampling = false; }
     }
 
     private Settings.SettingsWindow? _settingsWindow;

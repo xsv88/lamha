@@ -12,6 +12,7 @@ public static class Theme
 {
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
     private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
+    private const int DWMSBT_NONE = 1;
     private const int DWMSBT_TRANSIENTWINDOW = 3; // Acrylic, like Windows flyouts.
 
     /// <summary>Windows 11 22H2 (build 22621) and later support the backdrop API.</summary>
@@ -24,7 +25,8 @@ public static class Theme
         _ => WindowsUsesDark(),
     };
 
-    public static void Apply(Window w, bool dark)
+    /// <param name="opacity">Below 1.0 the window is layered, where the backdrop cannot render, so a solid color is used.</param>
+    public static void Apply(Window w, bool dark, double opacity = 1.0)
     {
         w.Foreground = new SolidColorBrush(dark ? Color.FromRgb(0xF3, 0xF3, 0xF3) : Color.FromRgb(0x1A, 0x1A, 0x1A));
 
@@ -38,7 +40,8 @@ public static class Theme
         int on = dark ? 1 : 0;
         Native.DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref on, sizeof(int));
 
-        if (SupportsBackdrop && HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
+        var source = HwndSource.FromHwnd(hwnd);
+        if (SupportsBackdrop && opacity >= 0.999 && source is { CompositionTarget: { } target })
         {
             // Let DWM paint the blurred background behind transparent WPF content.
             target.BackgroundColor = Colors.Transparent;
@@ -51,6 +54,11 @@ public static class Theme
         }
         else
         {
+            if (SupportsBackdrop)
+            {
+                int none = DWMSBT_NONE;
+                Native.DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref none, sizeof(int));
+            }
             w.Background = Solid(dark);
         }
     }

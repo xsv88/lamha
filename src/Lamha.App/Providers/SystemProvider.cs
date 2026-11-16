@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Lamha.App.Interop;
+using Lamha.Core.SystemInfo;
 
 namespace Lamha.App.Providers;
 
@@ -26,6 +27,7 @@ public sealed class SystemProvider : IDisposable
     private List<PerformanceCounter> _gpu = [];
     private DateTime _gpuListedAt = DateTime.MinValue;
     private bool _gpuAvailable = true;
+    private double? _lastGpu;
 
     public SystemSnapshot Sample(bool includeTopApps) => new(
         ReadCpu(), ReadRam(out double used, out double total), used, total, ReadGpu(),
@@ -78,6 +80,7 @@ public sealed class SystemProvider : IDisposable
                     .ToList();
                 foreach (var c in _gpu) c.NextValue(); // First read of a counter is always 0.
                 _gpuListedAt = DateTime.UtcNow;
+                return _lastGpu; // Real values come on the next tick; keep showing the last one.
             }
 
             double sum = 0;
@@ -86,7 +89,7 @@ public sealed class SystemProvider : IDisposable
                 try { sum += c.NextValue(); }
                 catch (InvalidOperationException) { /* Process ended since the list was made. */ }
             }
-            return Math.Clamp(sum, 0, 100);
+            return _lastGpu = Math.Clamp(sum, 0, 100);
         }
         catch (Exception ex)
         {
@@ -99,11 +102,15 @@ public sealed class SystemProvider : IDisposable
     private static List<AppUsage> TopApps(int count)
     {
         var usage = new Dictionary<string, (int Count, long Bytes)>(StringComparer.OrdinalIgnoreCase);
+        var withWindow = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        int mySession = Process.GetCurrentProcess().SessionId;
         foreach (var p in Process.GetProcesses())
         {
             try
             {
-                if (p.Id is 0 or 4) continue; // Idle and System.
+                // Only the user's own apps: same session, not a protected Windows process.
+                if (p.SessionId != mySession || !ProcessFilter.IsClosable(p.ProcessName)) continue;
+                if (p.MainWindowHandle != IntPtr.Zero) withWindow.Add(p.ProcessName);
                 usage.TryGetValue(p.ProcessName, out var e);
                 usage[p.ProcessName] = (e.Count + 1, e.Bytes + p.PrivateMemorySize64);
             }
@@ -111,7 +118,9 @@ public sealed class SystemProvider : IDisposable
             finally { p.Dispose(); }
         }
         const double Gb = 1024d * 1024 * 1024;
-        return usage.OrderByDescending(kv => kv.Value.Bytes).Take(count)
+        // An app counts if at least one of its processes has a window (Chrome's helpers don't, its main does).
+        return usage.Where(kv => withWindow.Contains(kv.Key))
+            .OrderByDescending(kv => kv.Value.Bytes).Take(count)
             .Select(kv => new AppUsage(kv.Key, kv.Value.Count, kv.Value.Bytes / Gb)).ToList();
     }
 }

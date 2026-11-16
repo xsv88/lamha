@@ -18,13 +18,19 @@ public partial class PanelWindow : Window
     private IntPtr _hwnd;
     private Native.POINT _anchor;
     private double _opacity = 1.0;
+    private DateTime _hiddenByDeactivateAt = DateTime.MinValue;
     private Lamha.Core.Settings.ThemeMode _theme;
 
     public PanelWindow()
     {
         InitializeComponent();
         SourceInitialized += (_, _) => OnHandleCreated();
-        Deactivated += (_, _) => { if (IsPinned) HidePanel(); };
+        Deactivated += (_, _) =>
+        {
+            if (!IsPinned) return;
+            _hiddenByDeactivateAt = DateTime.UtcNow;
+            HidePanel();
+        };
         KeyDown += (_, e) => { if (e.Key == Key.Escape) HidePanel(); };
         // A section can appear later (e.g. music starts): keep the panel anchored to the icon.
         SizeChanged += (_, _) => { if (IsVisible) PlaceAt(_anchor); };
@@ -32,6 +38,12 @@ public partial class PanelWindow : Window
 
     /// <summary>True after a click or hotkey: stays open until click outside or Esc.</summary>
     public bool IsPinned { get; private set; }
+
+    /// <summary>
+    /// True right after a click outside closed the panel. A click on the tray icon itself
+    /// first deactivates the panel; this lets that same click close it instead of reopening it.
+    /// </summary>
+    public bool JustClosedByOutsideClick => DateTime.UtcNow - _hiddenByDeactivateAt < TimeSpan.FromMilliseconds(300);
 
     /// <summary>Raised when the panel opens or closes, so providers can start or stop sampling.</summary>
     public event Action<bool>? OpenChanged;
@@ -61,7 +73,7 @@ public partial class PanelWindow : Window
         _opacity = s.PanelOpacity;
         if (IsVisible) SetAlpha(_opacity);
         _theme = s.Theme;
-        Theme.Apply(this, Theme.IsDark(s.Theme));
+        Theme.Apply(this, Theme.IsDark(s.Theme), _opacity);
         FlowDirection = Loc.IsArabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         Header.Invalidate();
         PcLoad.Relabel();
@@ -105,12 +117,12 @@ public partial class PanelWindow : Window
 
         SetAlpha(_opacity);
 
-        Theme.Apply(this, Theme.IsDark(_theme));
+        Theme.Apply(this, Theme.IsDark(_theme), _opacity);
         // Follow Windows when the user switches light/dark.
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, e) =>
         {
             if (e.Category == Microsoft.Win32.UserPreferenceCategory.General)
-                Dispatcher.BeginInvoke(() => Theme.Apply(this, Theme.IsDark(_theme)));
+                Dispatcher.BeginInvoke(() => Theme.Apply(this, Theme.IsDark(_theme), _opacity));
         };
 
         // Rounded corners on Windows 11 (ignored on Windows 10).

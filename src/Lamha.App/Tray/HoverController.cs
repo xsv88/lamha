@@ -51,6 +51,7 @@ public sealed class HoverController
     public void OnIconClick()
     {
         _hoverStarted = null;
+        if (_panel.JustClosedByOutsideClick) return; // This click already closed it.
         if (_panel.IsVisible && _panel.IsPinned)
         {
             _panel.HidePanel();

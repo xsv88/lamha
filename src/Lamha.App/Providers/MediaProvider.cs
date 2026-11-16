@@ -29,15 +29,20 @@ public sealed class MediaProvider
     private GlobalSystemMediaTransportControlsSession? _session;
     private byte[]? _thumb;
     private string? _thumbKey;
+    private bool _active;
+    private readonly SemaphoreSlim _publishLock = new(1, 1); // One publish at a time, in order.
 
     /// <summary>Raised on a background thread. Null = nothing playing.</summary>
     public event Action<NowPlaying?>? Changed;
 
     public async Task StartAsync()
     {
+        _active = true;
         try
         {
             _manager ??= await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            if (!_active) return; // Panel closed while we were waiting.
+            _manager.CurrentSessionChanged -= OnSessionChanged; // Never subscribe twice.
             _manager.CurrentSessionChanged += OnSessionChanged;
             Attach(_manager.GetCurrentSession());
             await PublishAsync(refreshThumbnail: true);
@@ -51,6 +56,7 @@ public sealed class MediaProvider
 
     public void Stop()
     {
+        _active = false;
         if (_manager is not null) _manager.CurrentSessionChanged -= OnSessionChanged;
         Attach(null);
     }
@@ -99,19 +105,28 @@ public sealed class MediaProvider
 
     private async Task PublishAsync(bool refreshThumbnail)
     {
+        if (!_active) return;
+        await _publishLock.WaitAsync();
         try
         {
+            if (!_active) return;
             var session = _session;
             if (session is null) { Changed?.Invoke(null); return; }
 
             var props = await session.TryGetMediaPropertiesAsync();
             if (props is null || string.IsNullOrWhiteSpace(props.Title)) { Changed?.Invoke(null); return; }
 
-            string key = props.Title + "|" + props.Artist;
+            // Players often send the title first and the cover a moment later, so the key
+            // includes whether a cover exists, and is saved only after a successful read.
+            string key = $"{props.Title}|{props.Artist}|{props.Thumbnail is not null}";
             if (refreshThumbnail && key != _thumbKey)
             {
-                _thumbKey = key;
-                _thumb = await ReadThumbnailAsync(props.Thumbnail);
+                var thumb = await ReadThumbnailAsync(props.Thumbnail);
+                if (thumb is not null || props.Thumbnail is null)
+                {
+                    _thumb = thumb;
+                    _thumbKey = key;
+                }
             }
 
             var playback = session.GetPlaybackInfo();
@@ -128,6 +143,10 @@ public sealed class MediaProvider
         {
             CrashLog.Write(ex); // A player can close mid-read.
             Changed?.Invoke(null);
+        }
+        finally
+        {
+            _publishLock.Release();
         }
     }
 

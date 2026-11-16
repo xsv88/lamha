@@ -60,15 +60,30 @@ public sealed record AppSettings
     public double PanelOpacity { get; init; } = 1.0;
     public LanguageMode Language { get; init; } = LanguageMode.Auto;
 
-    /// <summary>Returns a copy with every value inside its allowed range.</summary>
-    public AppSettings Normalized() => this with
+    /// <summary>
+    /// Returns a copy with every value inside its allowed range. A JSON file can hold
+    /// explicit nulls even for non-nullable members, so those are replaced with defaults too.
+    /// </summary>
+    public AppSettings Normalized()
     {
-        PanelOpacity = Math.Clamp(PanelOpacity, MinOpacity, MaxOpacity),
-        Prayer = Prayer with
+        var prayer = Prayer ?? new PrayerSettings();
+        var defaults = new PrayerSettings();
+        return this with
         {
-            AlertMinutesBefore = Math.Clamp(Prayer.AlertMinutesBefore, 0, 120),
-            OffsetMinutes = Prayer.OffsetMinutes.ToDictionary(kv => kv.Key, kv => Math.Clamp(kv.Value, -30, 30)),
-            IqamaMinutes = Prayer.IqamaMinutes.ToDictionary(kv => kv.Key, kv => Math.Clamp(kv.Value, 0, 60)),
-        },
-    };
+            SectionOrder = SectionOrder is { Count: > 0 } order ? order : Default.SectionOrder,
+            HiddenSections = HiddenSections ?? [],
+            Location = Location ?? LocationSetting.Default,
+            Hotkey = string.IsNullOrWhiteSpace(Hotkey) ? Default.Hotkey : Hotkey,
+            PanelOpacity = Math.Clamp(PanelOpacity, MinOpacity, MaxOpacity),
+            Prayer = prayer with
+            {
+                Method = prayer.Method ?? defaults.Method,
+                AlertMinutesBefore = Math.Clamp(prayer.AlertMinutesBefore, 0, 120),
+                OffsetMinutes = (prayer.OffsetMinutes ?? defaults.OffsetMinutes)
+                    .ToDictionary(kv => kv.Key, kv => Math.Clamp(kv.Value, -30, 30)),
+                IqamaMinutes = (prayer.IqamaMinutes ?? defaults.IqamaMinutes)
+                    .ToDictionary(kv => kv.Key, kv => Math.Clamp(kv.Value, 0, 60)),
+            },
+        };
+    }
 }

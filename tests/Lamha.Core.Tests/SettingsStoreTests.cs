@@ -87,4 +87,23 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal(10, iq[PrayerName.Maghrib]);
         Assert.Equal(20, iq[PrayerName.Isha]);
     }
+
+    [Theory]
+    [InlineData("""{ "Prayer": null }""")]
+    [InlineData("""{ "Prayer": { "OffsetMinutes": null, "IqamaMinutes": null } }""")]
+    [InlineData("""{ "SectionOrder": null, "HiddenSections": null }""")]
+    [InlineData("""{ "Hotkey": null, "Location": null }""")]
+    public void Load_ExplicitNulls_FilledWithDefaults(string json)
+    {
+        File.WriteAllText(FilePath, json);
+        var s = new SettingsStore(FilePath).Load();
+
+        Assert.NotNull(s.Prayer);
+        Assert.NotNull(s.Prayer.OffsetMinutes);
+        Assert.Equal(25, s.Prayer.IqamaMinutes[PrayerName.Fajr]);
+        Assert.NotEmpty(s.SectionOrder);
+        Assert.NotNull(s.HiddenSections);
+        Assert.Equal(AppSettings.Default.Hotkey, s.Hotkey);
+        Assert.NotNull(s.Location);
+    }
 }
