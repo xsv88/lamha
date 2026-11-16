@@ -42,11 +42,14 @@ public partial class App : Application
         _tray = new TrayIconController(
             onHover: _hover.OnIconHover,
             onClick: _hover.OnIconClick,
+            onSettings: () => OpenSettings(),
             onExit: Shutdown);
 
         _store = new SettingsStore(System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Lamha", "settings.json"));
         Settings = _store.Load();
+        _panel.ApplySettings(Settings);
+        StartupService.SetEnabled(Settings.StartWithWindows);
 
         _prayer = new PrayerService(Settings.Prayer);
         _prayer.AccentChanged += _tray.SetAccent;
@@ -77,7 +80,43 @@ public partial class App : Application
             else _systemTimer.Stop();
         };
 
+        _panel.Prayer.Clicked += () => OpenSettings(prayerTab: true);
+
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
+    }
+
+    private Settings.SettingsWindow? _settingsWindow;
+
+    /// <summary>Raised after settings are saved, for services added in later tasks.</summary>
+    public event Action<AppSettings>? SettingsChanged;
+
+    private void OpenSettings(bool prayerTab = false)
+    {
+        _panel?.HidePanel();
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new Settings.SettingsWindow(Settings);
+            _settingsWindow.Changed += ApplySettings;
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+        if (prayerTab) _settingsWindow.OpenPrayerTab();
+        _settingsWindow.Show();
+        _settingsWindow.Activate();
+    }
+
+    private async void ApplySettings(AppSettings next)
+    {
+        var previous = Settings;
+        Settings = next.Normalized();
+        _store?.Save(Settings);
+
+        _panel?.ApplySettings(Settings);
+        _prayer?.SetSettings(Settings.Prayer);
+        if (previous.StartWithWindows != Settings.StartWithWindows) StartupService.SetEnabled(Settings.StartWithWindows);
+        if (previous.Location != Settings.Location && _prayer is not null)
+            _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
+
+        SettingsChanged?.Invoke(Settings);
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -14,9 +14,10 @@
         Foreground="#FFF3F3F3">
     <!-- Sections are added here in later tasks, in the order the user chose. -->
     <StackPanel x:Name="Sections" Margin="16">
-        <sec:HeaderSection x:Name="Header" />
-        <sec:PrayerSection x:Name="Prayer" />
-        <sec:NowPlayingSection x:Name="NowPlaying" />
-        <sec:PcLoadSection x:Name="PcLoad" />
+        <!-- Each host is shown or hidden by settings; the section inside may also hide itself. -->
+        <Border x:Name="HeaderHost"><sec:HeaderSection x:Name="Header" /></Border>
+        <Border x:Name="PrayerHost"><sec:PrayerSection x:Name="Prayer" /></Border>
+        <Border x:Name="NowPlayingHost"><sec:NowPlayingSection x:Name="NowPlaying" /></Border>
+        <Border x:Name="PcLoadHost"><sec:PcLoadSection x:Name="PcLoad" /></Border>
     </StackPanel>
 </Window>

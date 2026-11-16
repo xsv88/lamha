@@ -3,6 +3,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Lamha.App.Interop;
 using Lamha.App.Tray;
+using Lamha.Core.Settings;
+using System.Windows.Controls;
 
 namespace Lamha.App.Panel;
 
@@ -14,6 +16,7 @@ public partial class PanelWindow : Window
 {
     private IntPtr _hwnd;
     private Native.POINT _anchor;
+    private double _opacity = 1.0;
 
     public PanelWindow()
     {
@@ -46,9 +49,31 @@ public partial class PanelWindow : Window
         }
 
         PlaceAt(anchor);
-        Opacity = 1;
+        Opacity = _opacity;
 
         if (pinned) Activate();
+    }
+
+    /// <summary>Applies section order, hidden sections and opacity from settings.</summary>
+    public void ApplySettings(AppSettings s)
+    {
+        _opacity = s.PanelOpacity;
+        if (IsVisible) Opacity = _opacity;
+
+        var hosts = new Dictionary<SectionId, FrameworkElement>
+        {
+            [SectionId.Header] = HeaderHost,
+            [SectionId.Prayer] = PrayerHost,
+            [SectionId.NowPlaying] = NowPlayingHost,
+            [SectionId.PcLoad] = PcLoadHost,
+        };
+        Sections.Children.Clear();
+        foreach (var id in s.SectionOrder)
+        {
+            if (!hosts.TryGetValue(id, out var host)) continue; // Phase 2/3 sections.
+            host.Visibility = s.HiddenSections.Contains(id) ? Visibility.Collapsed : Visibility.Visible;
+            Sections.Children.Add(host);
+        }
     }
 
     public void HidePanel()
