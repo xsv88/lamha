@@ -189,3 +189,39 @@ SettingsService   — JSON at %AppData%\Lamha\settings.json
 - Final app name and icon.
 
 Dropped: pausing or lowering media at adhan (Khaled chose not to include it).
+
+---
+
+# Addendum (2026-11-16): Phase 2A — taskbar strip
+
+Khaled asked for text **on the taskbar itself**, like Awqat Salaat ("Fajr 4:37 · in 7:10"),
+showing 1–3 items he chooses. New phase order: **2A taskbar strip → 2B device batteries → 2C online info**
+(weather, network, Google Calendar). Batteries and events become strip items when their phase lands.
+
+## What it is
+- A small borderless, always-on-top, transparent window sitting **on the taskbar, left of the system tray**.
+- Shows 1–3 **items** side by side. Each item is two short lines (title, value), like the clock.
+- Hovering the strip opens the panel above it (same 250/400 ms rules); clicking pins it.
+- Optional: **on by default** with one item (next prayer); can be turned off in Settings.
+
+## Items (Phase 2A)
+| Item | Line 1 | Line 2 |
+|---|---|---|
+| Next prayer | `Fajr 04:37` | `in 7:10` (Normal) / `Iqama 12:40` (yellow/red) |
+| Now playing | title (max 18 chars) | artist |
+| CPU + RAM | `CPU 31%` | `RAM 26.1 GB` |
+| Hijri date | `6 Jumada II` | `1448` |
+
+Later phases add: **Battery** (2B, lowest device %), **Next event** (2C). Prayer item text uses the card colors (blue accent when <15 min, yellow, red).
+
+## Placement and stability
+- Primary monitor's taskbar only. Hidden when the taskbar is on the left/right edge, is auto-hidden, or a full-screen app is running.
+- Default position: just left of the notification area (`Shell_TrayWnd` → `TrayNotifyWnd` rect). If that rect is unavailable, 260 px (scaled) from the taskbar's right edge.
+- **Drag to move** horizontally along the taskbar; the offset is saved. "Reset position" in Settings.
+- Re-asserts topmost every 2 s (the taskbar can cover it after being clicked). No hooks into Explorer, no injection.
+
+## Settings
+- Show taskbar strip (on). Items: ordered list, 1–3, no duplicates. Reset position.
+
+## Performance
+- Updates once a second only while visible; CPU/RAM item samples on a background thread (same provider as the panel).
