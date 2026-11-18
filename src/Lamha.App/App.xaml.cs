@@ -6,6 +6,7 @@ using Lamha.App.Tray;
 using Lamha.App.Strip;
 using Lamha.Core.Prayer;
 using Lamha.Core.Strip;
+using Lamha.Core.Batteries;
 
 namespace Lamha.App;
 
@@ -27,6 +28,12 @@ public partial class App : Application
     private SettingsStore? _store;
     private StripWindow? _strip;
     private readonly MemoryTrimmer _trimmer = new();
+    private readonly Providers.BatteryProvider _batteries = new();
+    private readonly LowBatteryAlerts _batteryAlerts = new();
+    private readonly System.Windows.Threading.DispatcherTimer _batteryTimer = new() { Interval = TimeSpan.FromMinutes(5) };
+    private IReadOnlyList<BatteryReading> _lastBatteries = [];
+    private TrayAccent _prayerAccent = TrayAccent.None;
+    private bool _readingBatteries;
 
     // Latest values, kept so the taskbar strip can show them while the panel is closed.
     private PrayerState? _lastPrayer;
@@ -66,7 +73,7 @@ public partial class App : Application
         StartupService.SetEnabled(Settings.StartWithWindows);
 
         _prayer = new PrayerService(Settings.Prayer);
-        _prayer.AccentChanged += _tray.SetAccent;
+        _prayer.AccentChanged += accent => { _prayerAccent = accent; UpdateAccent(); };
         _alerts = new Lamha.Core.Alerts.AlertRules(Settings.Prayer, Settings.DoNotDisturbFullscreen);
         _prayer.Updated += (state, times) =>
         {
@@ -102,9 +109,15 @@ public partial class App : Application
         _panel.OpenChanged += open =>
         {
             if (!open) _panel.NowPlaying.Show(null); // Stops the progress timer and the bar animations.
+            else _panel.Batteries.Show(_lastBatteries);
             UpdateActivity();
             if (open) _trimmer.Cancel(); else _trimmer.Schedule();
         };
+
+        // Batteries: every 30 s while shown (panel or strip), every 5 min otherwise for low-battery alerts.
+        _batteryTimer.Tick += (_, _) => ReadBatteries();
+        _batteryTimer.Start();
+        ReadBatteries();
 
         // PC load: sample once a second while the panel is open or the strip shows it.
         _systemTimer.Tick += (_, _) => SampleSystem();
@@ -177,6 +190,50 @@ public partial class App : Application
         else _systemTimer.Stop();
 
         _prayer?.SetStripNeedsSeconds(StripShows(StripItem.NextPrayer));
+
+        var batteryInterval = panelOpen || StripShows(StripItem.Battery) ? TimeSpan.FromSeconds(30) : TimeSpan.FromMinutes(5);
+        if (_batteryTimer.Interval != batteryInterval)
+        {
+            _batteryTimer.Interval = batteryInterval;
+            if (panelOpen) ReadBatteries(); // Fresh numbers right when the panel opens.
+        }
+    }
+
+    /// <summary>Reads all battery sources, then updates panel, strip, tray color and alerts.</summary>
+    private async void ReadBatteries()
+    {
+        if (_readingBatteries) return;
+        _readingBatteries = true;
+        try
+        {
+            _lastBatteries = await _batteries.ReadAsync();
+
+            // Same do-not-disturb rule as prayer reminders: wait until full screen ends.
+            if (!(Settings.DoNotDisturbFullscreen && Providers.FullscreenDetector.IsBusy()))
+            {
+                foreach (var low in _batteryAlerts.Tick(_lastBatteries))
+                {
+                    string name = low.Kind == DeviceKind.ThisPc ? Ui.Loc.T("ThisPc") : low.Name;
+                    ToastService.Show(string.Format(Ui.Loc.T("BatteryLowTitle"), name),
+                        string.Format(Ui.Loc.T("BatteryLowBody"), low.Percent));
+                }
+            }
+
+            if (_panel is { IsVisible: true }) _panel.Batteries.Show(_lastBatteries);
+            RenderStrip();
+            UpdateAccent();
+        }
+        catch (Exception ex) { CrashLog.Write(ex); }
+        finally { _readingBatteries = false; }
+    }
+
+    /// <summary>Prayer colors win; otherwise blue when any device battery is low.</summary>
+    private void UpdateAccent()
+    {
+        var accent = _prayerAccent != TrayAccent.None ? _prayerAccent
+            : _lastBatteries.Any(b => b.IsLow) ? TrayAccent.Blue
+            : TrayAccent.None;
+        _tray?.SetAccent(accent);
     }
 
     private void ApplyStripSettings()
@@ -203,6 +260,9 @@ public partial class App : Application
                     break;
                 case StripItem.CpuRam when _lastSystem is { } sys:
                     texts.Add(StripFormatter.CpuRam(sys.CpuPercent, sys.RamUsedGb));
+                    break;
+                case StripItem.Battery when BatteryRules.Lowest(_lastBatteries) is { } low:
+                    texts.Add(StripFormatter.Battery(low.Kind == DeviceKind.ThisPc ? low with { Name = Ui.Loc.T("ThisPc") } : low));
                     break;
                 case StripItem.HijriDate:
                     var cal = new System.Globalization.UmAlQuraCalendar();

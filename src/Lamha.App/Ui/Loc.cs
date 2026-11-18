@@ -52,7 +52,8 @@ public static class Loc
         ["HijriShort5"] = "Jumada I", ["HijriShort6"] = "Jumada II", ["HijriShort7"] = "Rajab", ["HijriShort8"] = "Shaban",
         ["HijriShort9"] = "Ramadan", ["HijriShort10"] = "Shawwal", ["HijriShort11"] = "Dhul-Qadah", ["HijriShort12"] = "Dhul-Hijjah",
         ["StripNextPrayer"] = "Next prayer", ["StripNowPlaying"] = "Now playing", ["StripCpuRam"] = "CPU and RAM",
-        ["StripHijriDate"] = "Hijri date", ["StripNone"] = "None", ["Taskbar"] = "Taskbar",
+        ["StripHijriDate"] = "Hijri date", ["StripBattery"] = "Lowest battery", ["ThisPc"] = "This PC",
+        ["BatteryLowTitle"] = "{0} battery low", ["BatteryLowBody"] = "{0}% left. Time to charge.", ["StripNone"] = "None", ["Taskbar"] = "Taskbar",
         ["ShowStrip"] = "Show text on the taskbar", ["ResetPosition"] = "Reset position",
         ["StripItems"] = "Items (up to 3, left to right)", ["StripHint"] = "Tip: drag the text on the taskbar to move it.",
     };
@@ -75,7 +76,8 @@ public static class Loc
         ["HijriShort5"] = "جمادى ١", ["HijriShort6"] = "جمادى ٢", ["HijriShort7"] = "رجب", ["HijriShort8"] = "شعبان",
         ["HijriShort9"] = "رمضان", ["HijriShort10"] = "شوال", ["HijriShort11"] = "ذو القعدة", ["HijriShort12"] = "ذو الحجة",
         ["StripNextPrayer"] = "الصلاة الجاية", ["StripNowPlaying"] = "المقطع الشغال", ["StripCpuRam"] = "المعالج والرام",
-        ["StripHijriDate"] = "التاريخ الهجري", ["StripNone"] = "لا شيء", ["Taskbar"] = "شريط المهام",
+        ["StripHijriDate"] = "التاريخ الهجري", ["StripBattery"] = "أقل بطارية", ["ThisPc"] = "هذا الجهاز",
+        ["BatteryLowTitle"] = "بطارية {0} منخفضة", ["BatteryLowBody"] = "باقي {0}٪. وقت الشحن.", ["StripNone"] = "لا شيء", ["Taskbar"] = "شريط المهام",
         ["ShowStrip"] = "إظهار النص على شريط المهام", ["ResetPosition"] = "إرجاع المكان الافتراضي",
         ["StripItems"] = "العناصر (حتى ٣، بالترتيب)", ["StripHint"] = "تلميح: اسحب النص على الشريط لتحريكه.",
     };

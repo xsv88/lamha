@@ -18,6 +18,7 @@
         <Border x:Name="HeaderHost"><sec:HeaderSection x:Name="Header" /></Border>
         <Border x:Name="PrayerHost"><sec:PrayerSection x:Name="Prayer" /></Border>
         <Border x:Name="NowPlayingHost"><sec:NowPlayingSection x:Name="NowPlaying" /></Border>
+        <Border x:Name="BatteriesHost"><sec:BatteriesSection x:Name="Batteries" /></Border>
         <Border x:Name="PcLoadHost"><sec:PcLoadSection x:Name="PcLoad" /></Border>
     </StackPanel>
 </Window>

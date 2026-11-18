@@ -83,6 +83,7 @@ public partial class PanelWindow : Window
             [SectionId.Header] = HeaderHost,
             [SectionId.Prayer] = PrayerHost,
             [SectionId.NowPlaying] = NowPlayingHost,
+            [SectionId.Batteries] = BatteriesHost,
             [SectionId.PcLoad] = PcLoadHost,
         };
         Sections.Children.Clear();
