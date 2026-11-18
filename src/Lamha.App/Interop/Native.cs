@@ -112,5 +112,9 @@ public static partial class Native
     [LibraryImport("user32.dll")]
     public static partial IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
 
+    [LibraryImport("psapi.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool EmptyWorkingSet(IntPtr process);
+
     public static POINT CursorPos() => GetCursorPos(out var p) ? p : default;
 }

@@ -26,6 +26,7 @@ public partial class App : Application
     private readonly System.Windows.Threading.DispatcherTimer _systemTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private SettingsStore? _store;
     private StripWindow? _strip;
+    private readonly MemoryTrimmer _trimmer = new();
 
     // Latest values, kept so the taskbar strip can show them while the panel is closed.
     private PrayerState? _lastPrayer;
@@ -102,6 +103,7 @@ public partial class App : Application
         {
             if (!open) _panel.NowPlaying.Show(null); // Stops the progress timer and the bar animations.
             UpdateActivity();
+            if (open) _trimmer.Cancel(); else _trimmer.Schedule();
         };
 
         // PC load: sample once a second while the panel is open or the strip shows it.
@@ -128,6 +130,7 @@ public partial class App : Application
             CrashLog.Write(new InvalidOperationException($"Hotkey {Settings.Hotkey} is in use by another app."));
 
         _prayer.SetLocation(await LocationService.ResolveAsync(Settings.Location));
+        _trimmer.Schedule(); // Startup allocates a lot once; give it back.
     }
 
     private bool _sampling;
