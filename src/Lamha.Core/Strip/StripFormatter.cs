@@ -1,4 +1,5 @@
 using System.Globalization;
+using Lamha.Core.Batteries;
 using Lamha.Core.Media;
 using Lamha.Core.Prayer;
 
@@ -37,6 +38,10 @@ public static class StripFormatter
 
     public static StripText CpuRam(double cpuPercent, double ramUsedGb) =>
         new($"CPU {cpuPercent:0}%", $"RAM {ramUsedGb:0.0} GB");
+
+    /// <summary>The device most in need of charging: name, then percent; red when low.</summary>
+    public static StripText Battery(BatteryReading r) =>
+        new(Cut(r.Name), $"{r.Percent}%", r.IsLow ? StripTone.Red : StripTone.Normal);
 
     public static StripText Hijri(int day, string month, int year) => new($"{day} {month}", $"{year}");
 

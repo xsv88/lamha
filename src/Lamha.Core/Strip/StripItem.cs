@@ -1,7 +1,7 @@
 namespace Lamha.Core.Strip;
 
-/// <summary>What one block on the taskbar strip shows. Battery and NextEvent come in later phases.</summary>
-public enum StripItem { NextPrayer, NowPlaying, CpuRam, HijriDate }
+/// <summary>What one block on the taskbar strip shows. NextEvent comes in a later phase.</summary>
+public enum StripItem { NextPrayer, NowPlaying, CpuRam, HijriDate, Battery }
 
 /// <summary>Text color of a strip block. Matches the prayer card colors.</summary>
 public enum StripTone { Normal, Blue, Yellow, Red }
