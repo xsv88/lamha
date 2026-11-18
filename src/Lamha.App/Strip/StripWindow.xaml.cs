@@ -125,6 +125,10 @@ public partial class StripWindow : Window
         bool suppressed = _bar is null || _bar.AutoHide || _bar.Bounds.Height > _bar.Bounds.Width || FullscreenDetector.IsBusy();
         if (suppressed != SuppressedByEnvironment)
         {
+            // Diagnostic: record why the strip hides, to find short flickers.
+            CrashLog.Note(suppressed
+                ? $"strip hidden: bar={(_bar is null ? "null" : "ok")} autoHide={_bar?.AutoHide} vertical={_bar is { } b && b.Bounds.Height > b.Bounds.Width} busy={FullscreenDetector.IsBusy()}"
+                : "strip shown again");
             SuppressedByEnvironment = suppressed;
             SuppressedChanged?.Invoke();
         }
@@ -132,6 +136,7 @@ public partial class StripWindow : Window
         bool show = _enabled && !suppressed && Blocks.Children.Count > 0;
         if (!show)
         {
+            if (IsVisible && !suppressed) CrashLog.Note($"strip hidden: enabled={_enabled} blocks={Blocks.Children.Count}");
             if (IsVisible) Hide();
             return;
         }
@@ -141,6 +146,7 @@ public partial class StripWindow : Window
         var size = new PxSize(ActualWidth * bar.Scale, ActualHeight * bar.Scale);
         if (StripPlacement.Place(bar.Bounds, bar.TrayNotify, size, _offsetFromRight, bar.Scale) is not PxRect r)
         {
+            CrashLog.Note("strip hidden: placement failed");
             Hide(); // Vertical taskbar.
             return;
         }

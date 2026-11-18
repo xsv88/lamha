@@ -29,6 +29,18 @@ internal static class CrashLog
         };
     }
 
+    /// <summary>Writes one diagnostic line (not an error) to the same log file.</summary>
+    public static void Note(string message)
+    {
+        try
+        {
+            Directory.CreateDirectory(LogDir);
+            File.AppendAllText(Path.Combine(LogDir, $"lamha-{DateTime.Now:yyyyMMdd}.log"),
+                $"[{DateTime.Now:O}] NOTE {message}{Environment.NewLine}");
+        }
+        catch { /* Logging must never break the app. */ }
+    }
+
     public static void Write(Exception? ex)
     {
         if (ex is null) return;
