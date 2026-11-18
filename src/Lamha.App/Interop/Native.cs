@@ -83,5 +83,38 @@ public static partial class Native
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool SetLayeredWindowAttributes(IntPtr hWnd, uint key, byte alpha, uint flags);
 
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial IntPtr FindWindow(string? className, string? windowName);
+
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", StringMarshalling = StringMarshalling.Utf16)]
+    public static partial IntPtr FindWindowEx(IntPtr parent, IntPtr childAfter, string? className, string? windowName);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct APPBARDATA
+    {
+        public int cbSize;
+        public IntPtr hWnd;
+        public uint uCallbackMessage;
+        public uint uEdge;
+        public RECT rc;
+        public IntPtr lParam;
+    }
+
+    public const uint ABM_GETSTATE = 4;
+    public const int ABS_AUTOHIDE = 1;
+
+    [LibraryImport("shell32.dll")]
+    public static partial UIntPtr SHAppBarMessage(uint message, ref APPBARDATA data);
+
+    public static readonly IntPtr HWND_TOPMOST = new(-1);
+    public const uint SWP_SHOWWINDOW = 0x0040;
+
+    [LibraryImport("user32.dll")]
+    public static partial IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+    [LibraryImport("psapi.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static partial bool EmptyWorkingSet(IntPtr process);
+
     public static POINT CursorPos() => GetCursorPos(out var p) ? p : default;
 }

@@ -62,3 +62,15 @@ Mark each line ✅ / ❌ and add a note for every ❌.
 |---|---|---|
 | Lamha CPU % | | |
 | Lamha memory (MB) | | |
+
+## Taskbar strip (Phase 2A)
+| # | Check | PC | Surface |
+|---|---|---|---|
+| 35 | Text "Fajr 04:37 / in 7:10" shows on the taskbar, left of the tray icons | | |
+| 36 | Hover the text → panel opens above it; click → pins | | |
+| 37 | Drag the text left/right → moves; restart Lamha → same place | | |
+| 38 | Settings → Taskbar: choose 3 items → all show; "Reset position" works | | |
+| 39 | Prayer text turns yellow after adhan, red in last minute | | |
+| 40 | Full-screen game → strip hides; taskbar auto-hide → strip hides | | |
+| 41 | Taskbar light/dark → text color readable | | |
+| 42 | Click on the taskbar → strip stays visible (back on top within 2 s) | | |

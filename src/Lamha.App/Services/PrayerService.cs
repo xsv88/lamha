@@ -39,9 +39,24 @@ public sealed class PrayerService : IDisposable
 
     public PrayerState? Current { get; private set; }
 
+    private bool _panelOpen, _stripNeedsSeconds;
+
     public void SetPanelOpen(bool open)
     {
-        _timer.Interval = open ? TimeSpan.FromSeconds(1) : TimeSpan.FromMinutes(1);
+        _panelOpen = open;
+        UpdateInterval();
+    }
+
+    /// <summary>The taskbar strip shows the prayer countdown, so it needs a tick every second too.</summary>
+    public void SetStripNeedsSeconds(bool needs)
+    {
+        _stripNeedsSeconds = needs;
+        UpdateInterval();
+    }
+
+    private void UpdateInterval()
+    {
+        _timer.Interval = _panelOpen || _stripNeedsSeconds ? TimeSpan.FromSeconds(1) : TimeSpan.FromMinutes(1);
         _timer.Start();
         Tick();
     }
