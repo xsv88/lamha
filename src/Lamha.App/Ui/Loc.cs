@@ -28,6 +28,12 @@ public static class Loc
 
     public static string HijriMonth(int month) => T("Hijri" + month);
 
+    /// <summary>Short month name for the taskbar strip, e.g. "Jumada II".</summary>
+    public static string HijriMonthShort(int month) => T("HijriShort" + month);
+
+    public static Lamha.Core.Strip.StripWords StripWords =>
+        new(T("In"), T("Iqama"), T("Min"), T("HourShort"), T("MinuteShort"));
+
     private static readonly Dictionary<string, string> En = new()
     {
         ["Fajr"] = "Fajr", ["Shuruq"] = "Sunrise", ["Dhuhr"] = "Dhuhr", ["Asr"] = "Asr", ["Maghrib"] = "Maghrib", ["Isha"] = "Isha",
@@ -41,7 +47,10 @@ public static class Loc
         ["ToastSoonTitle"] = "{0} at {1}", ["ToastSoonBody"] = "In {0} minutes.",
         ["ToastMissedTitle"] = "Prayer reminder", ["ToastMissedBody"] = "You were in full screen. {0} at {1}.",
         ["HotkeyInUse"] = "This shortcut is in use. Kept {0}.",
-        ["In"] = "in", ["Iqama"] = "Iqama",
+        ["In"] = "in", ["Iqama"] = "Iqama", ["Min"] = "min", ["HourShort"] = "h", ["MinuteShort"] = "m",
+        ["HijriShort1"] = "Muharram", ["HijriShort2"] = "Safar", ["HijriShort3"] = "Rabi I", ["HijriShort4"] = "Rabi II",
+        ["HijriShort5"] = "Jumada I", ["HijriShort6"] = "Jumada II", ["HijriShort7"] = "Rajab", ["HijriShort8"] = "Shaban",
+        ["HijriShort9"] = "Ramadan", ["HijriShort10"] = "Shawwal", ["HijriShort11"] = "Dhul-Qadah", ["HijriShort12"] = "Dhul-Hijjah",
         ["StripNextPrayer"] = "Next prayer", ["StripNowPlaying"] = "Now playing", ["StripCpuRam"] = "CPU and RAM",
         ["StripHijriDate"] = "Hijri date", ["StripNone"] = "None", ["Taskbar"] = "Taskbar",
         ["ShowStrip"] = "Show text on the taskbar", ["ResetPosition"] = "Reset position",
@@ -61,7 +70,10 @@ public static class Loc
         ["ToastSoonTitle"] = "{0} الساعة {1}", ["ToastSoonBody"] = "بعد {0} دقيقة.",
         ["ToastMissedTitle"] = "تذكير بالصلاة", ["ToastMissedBody"] = "كنت في وضع ملء الشاشة. {0} الساعة {1}.",
         ["HotkeyInUse"] = "هذا الاختصار مستخدم. أبقينا {0}.",
-        ["In"] = "بعد", ["Iqama"] = "الإقامة",
+        ["In"] = "بعد", ["Iqama"] = "الإقامة", ["Min"] = "د", ["HourShort"] = "س", ["MinuteShort"] = "د",
+        ["HijriShort1"] = "محرم", ["HijriShort2"] = "صفر", ["HijriShort3"] = "ربيع ١", ["HijriShort4"] = "ربيع ٢",
+        ["HijriShort5"] = "جمادى ١", ["HijriShort6"] = "جمادى ٢", ["HijriShort7"] = "رجب", ["HijriShort8"] = "شعبان",
+        ["HijriShort9"] = "رمضان", ["HijriShort10"] = "شوال", ["HijriShort11"] = "ذو القعدة", ["HijriShort12"] = "ذو الحجة",
         ["StripNextPrayer"] = "الصلاة الجاية", ["StripNowPlaying"] = "المقطع الشغال", ["StripCpuRam"] = "المعالج والرام",
         ["StripHijriDate"] = "التاريخ الهجري", ["StripNone"] = "لا شيء", ["Taskbar"] = "شريط المهام",
         ["ShowStrip"] = "إظهار النص على شريط المهام", ["ResetPosition"] = "إرجاع المكان الافتراضي",

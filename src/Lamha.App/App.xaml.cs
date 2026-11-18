@@ -193,10 +193,10 @@ public partial class App : Application
             switch (item)
             {
                 case StripItem.NextPrayer when _lastPrayer is { } p:
-                    texts.Add(StripFormatter.NextPrayer(p, Ui.Loc.Prayer, Ui.Loc.T("In"), Ui.Loc.T("Iqama")));
+                    texts.Add(StripFormatter.NextPrayer(p, Ui.Loc.Prayer, Ui.Loc.StripWords));
                     break;
                 case StripItem.NowPlaying when _lastNowPlaying is { } np:
-                    texts.Add(StripFormatter.NowPlaying(np.Title, np.Artist));
+                    texts.Add(StripFormatter.NowPlaying(np.Title, np.Artist, np.ThumbnailBgra, np.ThumbW, np.IsPlaying));
                     break;
                 case StripItem.CpuRam when _lastSystem is { } sys:
                     texts.Add(StripFormatter.CpuRam(sys.CpuPercent, sys.RamUsedGb));
@@ -204,7 +204,7 @@ public partial class App : Application
                 case StripItem.HijriDate:
                     var cal = new System.Globalization.UmAlQuraCalendar();
                     var now = DateTime.Now;
-                    texts.Add(StripFormatter.Hijri(cal.GetDayOfMonth(now), Ui.Loc.HijriMonth(cal.GetMonth(now)), cal.GetYear(now)));
+                    texts.Add(StripFormatter.Hijri(cal.GetDayOfMonth(now), Ui.Loc.HijriMonthShort(cal.GetMonth(now)), cal.GetYear(now)));
                     break;
             }
         }

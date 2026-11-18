@@ -6,8 +6,20 @@ public enum StripItem { NextPrayer, NowPlaying, CpuRam, HijriDate }
 /// <summary>Text color of a strip block. Matches the prayer card colors.</summary>
 public enum StripTone { Normal, Blue, Yellow, Red }
 
-/// <summary>Two short lines, like the Windows clock.</summary>
-public sealed record StripText(string Line1, string Line2, StripTone Tone = StripTone.Normal);
+/// <summary>
+/// Two short lines, like the Windows clock. A now-playing block is drawn as a colored "pill"
+/// with the cover: <see cref="Pill"/> is its background, <see cref="Image"/> the cover pixels (BGRA).
+/// </summary>
+public sealed record StripText(string Line1, string Line2, StripTone Tone = StripTone.Normal)
+{
+    public Lamha.Core.Media.Rgb? Pill { get; init; }
+    public byte[]? Image { get; init; }
+    public int ImageSize { get; init; }
+    public bool Playing { get; init; }
+}
+
+/// <summary>Localized words used on the strip, e.g. English "in"/"min" or Arabic "بعد"/"د".</summary>
+public sealed record StripWords(string In, string Iqama, string Min, string Hour, string MinuteShort);
 
 public sealed record StripSettings
 {
