@@ -25,8 +25,10 @@ public partial class BatteriesSection : UserControl
             var pct = new TextBlock
             {
                 Text = $"{r.Percent}%", FlowDirection = FlowDirection.LeftToRight, VerticalAlignment = VerticalAlignment.Center,
-                Foreground = r.IsLow ? Red : r.Charging ? Green : null,
             };
+            // Only override the color when needed; otherwise the text keeps the panel's color.
+            if (r.IsLow) pct.Foreground = Red;
+            else if (r.Charging) pct.Foreground = Green;
             if (r.IsLow) pct.FontWeight = FontWeights.SemiBold;
             DockPanel.SetDock(pct, Dock.Right);
             row.Children.Add(pct);

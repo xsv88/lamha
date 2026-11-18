@@ -34,6 +34,7 @@ public partial class App : Application
     private IReadOnlyList<BatteryReading> _lastBatteries = [];
     private TrayAccent _prayerAccent = TrayAccent.None;
     private bool _readingBatteries;
+    private DateTime _lastBatteryRead = DateTime.MinValue;
 
     // Latest values, kept so the taskbar strip can show them while the panel is closed.
     private PrayerState? _lastPrayer;
@@ -195,7 +196,8 @@ public partial class App : Application
         if (_batteryTimer.Interval != batteryInterval)
         {
             _batteryTimer.Interval = batteryInterval;
-            if (panelOpen) ReadBatteries(); // Fresh numbers right when the panel opens.
+            // Fresh numbers when the panel opens, but not again on every quick hover.
+            if (panelOpen && DateTime.UtcNow - _lastBatteryRead > TimeSpan.FromSeconds(15)) ReadBatteries();
         }
     }
 
@@ -207,6 +209,7 @@ public partial class App : Application
         try
         {
             _lastBatteries = await _batteries.ReadAsync();
+            _lastBatteryRead = DateTime.UtcNow;
 
             // Same do-not-disturb rule as prayer reminders: wait until full screen ends.
             if (!(Settings.DoNotDisturbFullscreen && Providers.FullscreenDetector.IsBusy()))

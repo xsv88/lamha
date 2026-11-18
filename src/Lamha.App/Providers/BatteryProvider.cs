@@ -17,6 +17,13 @@ public sealed class BatteryProvider
     /// <summary>DEVPKEY_Bluetooth_Battery: the percentage Windows shows in Settings → Bluetooth.</summary>
     private const string BluetoothBatteryKey = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2";
     private const string ContainerIdKey = "System.Devices.ContainerId";
+    private const string ConnectedKey = "System.Devices.Connected";
+    private static readonly TimeSpan GattTimeout = TimeSpan.FromSeconds(3);
+
+    // Asking only for devices that have a battery value is much cheaper than listing every device.
+    private const string WithBatteryQuery = "System.Devices.Present:=System.StructuredQueryType.Boolean#True AND " + BluetoothBatteryKey + ":<>[]";
+    private const string AllPresentQuery = "System.Devices.Present:=System.StructuredQueryType.Boolean#True";
+    private static bool _filterUnsupported;
 
     public async Task<IReadOnlyList<BatteryReading>> ReadAsync()
     {
@@ -37,10 +44,19 @@ public sealed class BatteryProvider
     /// <summary>Source 1: devices whose driver reports battery to Windows (classic and LE Bluetooth).</summary>
     private static async Task<IReadOnlyList<BatteryReading>> ReadBluetoothPropertyAsync()
     {
-        var devices = await DeviceInformation.FindAllAsync(
-            "System.Devices.Present:=System.StructuredQueryType.Boolean#True",
-            [BluetoothBatteryKey, ContainerIdKey],
-            DeviceInformationKind.Device);
+        DeviceInformationCollection devices;
+        try
+        {
+            devices = await DeviceInformation.FindAllAsync(_filterUnsupported ? AllPresentQuery : WithBatteryQuery,
+                [BluetoothBatteryKey, ContainerIdKey], DeviceInformationKind.Device);
+        }
+        catch (Exception ex) when (!_filterUnsupported)
+        {
+            // Some Windows builds reject the property filter: fall back to all present devices (slower, still correct).
+            CrashLog.Write(ex);
+            _filterUnsupported = true;
+            devices = await DeviceInformation.FindAllAsync(AllPresentQuery, [BluetoothBatteryKey, ContainerIdKey], DeviceInformationKind.Device);
+        }
 
         var result = new List<BatteryReading>();
         var seenContainers = new HashSet<Guid>();
@@ -55,7 +71,9 @@ public sealed class BatteryProvider
                 if (!seenContainers.Add(container)) continue;
                 try
                 {
-                    var box = await DeviceInformation.CreateFromIdAsync(container.ToString("B"), [], DeviceInformationKind.DeviceContainer);
+                    var box = await DeviceInformation.CreateFromIdAsync(container.ToString("B"), [ConnectedKey], DeviceInformationKind.DeviceContainer);
+                    // Paired devices stay "present" after they are switched off and may keep the last value: skip them.
+                    if (box.Properties.TryGetValue(ConnectedKey, out var connected) && connected is false) continue;
                     if (!string.IsNullOrWhiteSpace(box.Name)) name = box.Name;
                 }
                 catch (Exception ex) { CrashLog.Write(ex); }
@@ -74,22 +92,10 @@ public sealed class BatteryProvider
         {
             try
             {
-                using var device = await BluetoothLEDevice.FromIdAsync(info.Id);
-                if (device is null) continue;
-                var services = await device.GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Cached);
-                if (services.Status != GattCommunicationStatus.Success || services.Services.Count == 0) continue;
-
-                using var service = services.Services[0];
-                var chars = await service.GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Cached);
-                if (chars.Status != GattCommunicationStatus.Success || chars.Characteristics.Count == 0) continue;
-
-                var read = await chars.Characteristics[0].ReadValueAsync(BluetoothCacheMode.Uncached);
-                if (read.Status != GattCommunicationStatus.Success || read.Value.Length < 1) continue;
-
-                var bytes = new byte[1];
-                using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(read.Value)) reader.ReadBytes(bytes);
-                result.Add(new BatteryReading(device.Name, KindFromName(device.Name), bytes[0]));
+                // A sleeping device can stall a radio read for many seconds: give each device 3 s at most.
+                if (await ReadOneGattAsync(info.Id).WaitAsync(GattTimeout) is { } reading) result.Add(reading);
             }
+            catch (TimeoutException) { /* Asleep or out of range: try again next time. */ }
             catch (Exception ex)
             {
                 // Mice and keyboards often deny direct access (Windows owns their HID service): skip quietly.
@@ -97,6 +103,30 @@ public sealed class BatteryProvider
             }
         }
         return result;
+    }
+
+    private static async Task<BatteryReading?> ReadOneGattAsync(string id)
+    {
+        using var device = await BluetoothLEDevice.FromIdAsync(id);
+        if (device is null) return null;
+        var services = await device.GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Cached);
+        try
+        {
+            if (services.Status != GattCommunicationStatus.Success || services.Services.Count == 0) return null;
+            var chars = await services.Services[0].GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Cached);
+            if (chars.Status != GattCommunicationStatus.Success || chars.Characteristics.Count == 0) return null;
+
+            var read = await chars.Characteristics[0].ReadValueAsync(BluetoothCacheMode.Uncached);
+            if (read.Status != GattCommunicationStatus.Success || read.Value.Length < 1) return null;
+
+            var bytes = new byte[1];
+            using (var reader = Windows.Storage.Streams.DataReader.FromBuffer(read.Value)) reader.ReadBytes(bytes);
+            return new BatteryReading(device.Name, KindFromName(device.Name), bytes[0]);
+        }
+        finally
+        {
+            foreach (var service in services.Services) service.Dispose();
+        }
     }
 
     /// <summary>Source 3: game controllers (Xbox, etc.).</summary>
@@ -119,8 +149,9 @@ public sealed class BatteryProvider
     private static IReadOnlyList<BatteryReading> ReadThisPc()
     {
         if (PowerManager.BatteryStatus == BatteryStatus.NotPresent) return [];
+        // A weak charger ("Inadequate") still drains the battery, so it does not count as charging.
         bool charging = PowerManager.BatteryStatus == BatteryStatus.Charging
-                        || PowerManager.PowerSupplyStatus != PowerSupplyStatus.NotPresent;
+                        || (PowerManager.BatteryStatus == BatteryStatus.Idle && PowerManager.PowerSupplyStatus == PowerSupplyStatus.Adequate);
         return [new BatteryReading("This PC", DeviceKind.ThisPc, PowerManager.RemainingChargePercent, charging)];
     }
 
