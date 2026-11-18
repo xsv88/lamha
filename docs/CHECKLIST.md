@@ -74,3 +74,13 @@ Mark each line ✅ / ❌ and add a note for every ❌.
 | 40 | Full-screen game → strip hides; taskbar auto-hide → strip hides | | |
 | 41 | Taskbar light/dark → text color readable | | |
 | 42 | Click on the taskbar → strip stays visible (back on top within 2 s) | | |
+
+## Batteries (Phase 2B)
+| # | Check | PC | Surface |
+|---|---|---|---|
+| 43 | Bluetooth headset/mouse/keyboard that shows battery in Windows Settings → same % in panel | | |
+| 44 | Surface: "This PC" row with charging mark when plugged in | — | |
+| 45 | Desktop with no battery devices → Batteries section hidden | | — |
+| 46 | Strip item "Lowest battery" shows device name + %; red under 20 % | | |
+| 47 | Device under 20 % → one toast; no repeat until charged to 30 % | | |
+| 48 | Tray icon blue when a device is low (and no prayer color active) | | |

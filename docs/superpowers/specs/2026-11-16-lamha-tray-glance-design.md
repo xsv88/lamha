@@ -225,3 +225,27 @@ Later phases add: **Battery** (2B, lowest device %), **Next event** (2C). Prayer
 
 ## Performance
 - Updates once a second only while visible; CPU/RAM item samples on a background thread (same provider as the panel).
+
+---
+
+# Addendum (2026-11-18): Phase 2B — device batteries
+
+Khaled: "read everything that can be read".
+
+## Sources (all official Windows APIs, no admin)
+1. **Bluetooth devices that report battery to Windows** (same number as Settings → Bluetooth): PnP device property `DEVPKEY_Bluetooth_Battery` `{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2`, read through `Windows.Devices.Enumeration.DeviceInformation` for paired, connected devices.
+2. **BLE GATT Battery Service** (0x180F / characteristic 0x2A19) for connected LE devices that Windows does not show.
+3. **Game controllers**: `Windows.Gaming.Input.RawGameController.TryGetBatteryReport()`.
+4. **This PC's own battery** (laptops/tablets): `Windows.System.Power.PowerManager`.
+
+Not in 2B: vendor USB dongles (Logitech Unifying/Bolt, Razer HyperSpeed) — no public Windows API. Listed as a later idea.
+
+## UI
+- **Panel → Batteries section**: one row per device — icon by kind (headset, mouse, keyboard, controller, PC, other), name, percent, a "charging" mark for the PC. Under 20 % in red. Hidden when no device reports a battery.
+- **Strip item "Battery"**: the lowest device, e.g. `Buds 15%` / name on line 1, percent on line 2; red tone under 20 %.
+- **Tray accent**: blue accent rule from the main spec (battery under 20 %) — prayer colors win when both apply.
+- **Alert**: one toast when a device drops under 20 %; re-armed only after it is seen at 30 % or more (or disappears and comes back above 30 %).
+
+## Refresh
+- 30 s while the panel is open or the strip shows Battery; 5 min otherwise (for alerts).
+- Each source fails independently; a failing source just adds nothing.

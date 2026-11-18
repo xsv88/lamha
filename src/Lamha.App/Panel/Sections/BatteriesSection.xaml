@@ -1,0 +1,7 @@
+<UserControl x:Class="Lamha.App.Panel.Sections.BatteriesSection"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Visibility="Collapsed">
+    <!-- One row per device: icon, name, percent. Hidden when nothing reports a battery. -->
+    <StackPanel x:Name="Rows" Margin="0,0,0,10" />
+</UserControl>

@@ -91,3 +91,20 @@ public class StripFormatterTests
         Assert.Equal("1448", t.Line2);
     }
 }
+
+public class StripBatteryFormatTests
+{
+    [Fact]
+    public void Format_Battery_LowIsRed()
+    {
+        var t = Lamha.Core.Strip.StripFormatter.Battery(new Lamha.Core.Batteries.BatteryReading("Galaxy Buds2 Pro", Lamha.Core.Batteries.DeviceKind.Headset, 15));
+        Assert.Equal("Galaxy Buds2 Pro", t.Line1);
+        Assert.Equal("15%", t.Line2);
+        Assert.Equal(Lamha.Core.Strip.StripTone.Red, t.Tone);
+    }
+
+    [Fact]
+    public void Format_Battery_OkIsNormal() =>
+        Assert.Equal(Lamha.Core.Strip.StripTone.Normal, Lamha.Core.Strip.StripFormatter.Battery(
+            new Lamha.Core.Batteries.BatteryReading("Mouse", Lamha.Core.Batteries.DeviceKind.Mouse, 64)).Tone);
+}

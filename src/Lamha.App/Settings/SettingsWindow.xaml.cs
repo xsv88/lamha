@@ -254,7 +254,7 @@ public partial class SettingsWindow : Window
     }
 
     private static bool IsAvailableInPhase1(SectionId id) =>
-        id is SectionId.Header or SectionId.Prayer or SectionId.NowPlaying or SectionId.PcLoad;
+        id is SectionId.Header or SectionId.Prayer or SectionId.NowPlaying or SectionId.Batteries or SectionId.PcLoad;
 
     private static bool TryCoord(string text, double limit, out double value) =>
         double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && Math.Abs(value) <= limit;
